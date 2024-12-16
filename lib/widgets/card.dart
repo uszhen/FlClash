@@ -124,7 +124,7 @@ class CommonCard extends StatelessWidget {
           return colorScheme.secondaryContainer;
         }
         if (states.isEmpty) {
-          return colorScheme.secondaryContainer.toLittle();
+          return colorScheme.surface;
         }
         return Theme.of(context)
             .outlinedButtonTheme

@@ -45,14 +45,14 @@ class _DashboardFragmentState extends State<DashboardFragment> {
         alignment: Alignment.topCenter,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16).copyWith(
-            bottom: 88,
+            bottom: 0,
           ),
           child: Selector<AppState, double>(
             selector: (_, appState) => appState.viewWidth,
             builder: (_, viewWidth, ___) {
               final columns = max(4 * ((viewWidth / 350).ceil()), 8);
               final int switchCount = (4 / columns) * viewWidth < 200 ? 8 : 4;
-              return Grid(
+              return ReorderableGrid(
                 crossAxisCount: columns,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
@@ -61,37 +61,30 @@ class _DashboardFragmentState extends State<DashboardFragment> {
                     crossAxisCellCount: 8,
                     child: NetworkSpeed(),
                   ),
-                  // if (Platform.isAndroid)
-                  //   GridItem(
-                  //     crossAxisCellCount: switchCount,
-                  //     child: const VPNSwitch(),
-                  //   ),
-                  if (system.isDesktop) ...[
-                    GridItem(
-                      crossAxisCellCount: switchCount,
-                      child: const TUNButton(),
-                    ),
-                    GridItem(
-                      crossAxisCellCount: switchCount,
-                      child: const SystemProxyButton(),
-                    ),
-                  ],
+                  GridItem(
+                    crossAxisCellCount: switchCount,
+                    child: const TUNButton(),
+                  ),
+                  GridItem(
+                    crossAxisCellCount: switchCount,
+                    child: const SystemProxyButton(),
+                  ),
                   const GridItem(
                     crossAxisCellCount: 4,
                     child: OutboundMode(),
                   ),
                   const GridItem(
                     crossAxisCellCount: 4,
-                    child: NetworkDetection(),
-                  ),
-                  const GridItem(
-                    crossAxisCellCount: 4,
                     child: TrafficUsage(),
                   ),
-                  const GridItem(
-                    crossAxisCellCount: 4,
-                    child: IntranetIP(),
-                  ),
+                  // const GridItem(
+                  //   crossAxisCellCount: 4,
+                  //   child: NetworkDetection(),
+                  // ),
+                  // const GridItem(
+                  //   crossAxisCellCount: 4,
+                  //   child: IntranetIP(),
+                  // ),
                 ],
               );
             },
