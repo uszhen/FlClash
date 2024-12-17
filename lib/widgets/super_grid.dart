@@ -2,80 +2,112 @@ import 'dart:math';
 
 import 'package:fl_clash/common/num.dart';
 import 'package:fl_clash/widgets/grid.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-class ReorderableGrid extends StatefulWidget {
+typedef VoidCallback = void Function();
+
+class SuperGrid extends StatefulWidget {
   final List<GridItem> children;
   final double mainAxisSpacing;
   final double crossAxisSpacing;
   final int crossAxisCount;
+  final Function(int newIndex, int oldIndex)? onReorder;
 
-  // final AxisDirection axisDirection;
-
-  const ReorderableGrid({
+  const SuperGrid({
     super.key,
     required this.children,
     this.crossAxisCount = 1,
     this.mainAxisSpacing = 0,
     this.crossAxisSpacing = 0,
-    // this.axisDirection = AxisDirection.down,
+    this.onReorder,
   });
 
   @override
-  State<ReorderableGrid> createState() => _ReorderableGridState();
+  State<SuperGrid> createState() => _SuperGridState();
 }
 
-class _ReorderableGridState extends State<ReorderableGrid> {
+class _SuperGridState extends State<SuperGrid> {
   List<GridItem> get children => widget.children;
+
+  int get length => widget.children.length;
   List<BuildContext?> _itemContexts = [];
   Size _containerSize = Size.zero;
-  List<int> _indexList = [];
+  int _targetIndex = -1;
   List<Size> _sizes = [];
   List<Offset> _offsets = [];
+
   List<Offset> _preTransformOffsets = [];
-  List<Offset> _transformOffsets = [];
-  Widget? _dragWidget;
-  Size _dragWidgetSize = Size.zero;
-  int _dragIndex = -1;
+  final ValueNotifier<List<Offset>> _transformOffsetsNotifier =
+      ValueNotifier([]);
+
+  // final ValueNotifier<List<Tween<Offset>>> _transformOffsetsNotifier =
+  //     ValueNotifier([]);
+
+  final _dragWidgetSizeNotifier = ValueNotifier(Size.zero);
+  final _dragIndexNotifier = ValueNotifier(-1);
 
   int get crossCount => widget.crossAxisCount;
+
+  _initState() {
+    _transformOffsetsNotifier.value = List.filled(
+      length,
+      Offset.zero,
+    );
+    _preTransformOffsets = List.from(_transformOffsetsNotifier.value);
+    _sizes = List.generate(length, (index) => Size.zero);
+    _offsets = [];
+    _containerSize = Size.zero;
+    _dragIndexNotifier.value = -1;
+    _dragWidgetSizeNotifier.value = Size.zero;
+  }
 
   @override
   void initState() {
     super.initState();
-    _transformOffsets = List.filled(children.length, Offset.zero);
-    _preTransformOffsets = _transformOffsets;
-    _indexList = List.generate(children.length, (index) => index);
-    _sizes = List.generate(children.length, (index) => Size.zero);
     _itemContexts = List.filled(
-      children.length,
+      length,
       null,
     );
+    _initState();
   }
 
-  Widget _wrapTransform(Widget child, int index) {
-    return TweenAnimationBuilder<Offset>(
-      tween: Tween<Offset>(
-        begin: _preTransformOffsets[index],
-        end: _transformOffsets[index],
-      ),
-      duration: const Duration(milliseconds: 200),
-      builder: (_, offset, child) {
-        return Transform.translate(
-          offset: offset,
-          child: child,
-        );
+  Widget _wrapTransform(Widget rawChild, int index) {
+    return ValueListenableBuilder(
+      valueListenable: _dragIndexNotifier,
+      builder: (_, index, child) {
+        if (index == -1) {
+          return rawChild;
+        }
+        return child!;
       },
-      child: child,
+      child: ValueListenableBuilder(
+        valueListenable: _transformOffsetsNotifier,
+        builder: (_, transformOffsets, child) {
+          return TweenAnimationBuilder<Offset>(
+            tween: Tween<Offset>(
+              begin: _preTransformOffsets[index],
+              end: transformOffsets[index],
+            ),
+            duration: const Duration(milliseconds: 200),
+            builder: (_, offset, child) {
+              return Transform.translate(
+                offset: offset,
+                child: child!,
+              );
+            },
+            child: child!,
+          );
+        },
+        child: rawChild,
+      ),
     );
   }
 
   _handleDragStarted(int index) {
-    _dragIndex = index;
+    _initState();
+    _dragIndexNotifier.value = index;
     _sizes = _itemContexts.map((item) => item!.size!).toList();
-    _dragWidgetSize = _sizes[index];
-    _dragWidget = children[index].child;
+    _dragWidgetSizeNotifier.value = _sizes[index];
     final parentOffset =
         (context.findRenderObject() as RenderBox).localToGlobal(Offset.zero);
     _offsets = _itemContexts
@@ -83,32 +115,42 @@ class _ReorderableGridState extends State<ReorderableGrid> {
             (item!.findRenderObject() as RenderBox).localToGlobal(Offset.zero) -
             parentOffset)
         .toList();
-    _transformOffsets = List.filled(children.length, Offset.zero);
-    _indexList = List.generate(children.length, (index) => index);
     _containerSize = context.size!;
   }
 
-  _handleWill(int index) {
-    if (_dragIndex < 0 || _dragIndex > _offsets.length - 1) {
+  _handleDragEnd(DraggableDetails details) {
+    if (_targetIndex == -1) {
       return;
     }
-    final targetIndex = _indexList[index];
-    _indexList = _indexList.map((i) {
-      if (i == targetIndex) return _dragIndex;
-      if (_dragIndex > targetIndex && i > targetIndex && i <= _dragIndex) {
+    if (widget.onReorder != null) {
+      widget.onReorder!(_targetIndex, _dragIndexNotifier.value);
+    }
+    _initState();
+  }
+
+  _handleWill(int index) {
+    final dragIndex = _dragIndexNotifier.value;
+    if (dragIndex < 0 || dragIndex > _offsets.length - 1) {
+      return;
+    }
+
+    final targetIndex = index;
+    final indexList = List.generate(length, (i) {
+      if (i == targetIndex) return _dragIndexNotifier.value;
+      if (dragIndex > targetIndex && i > targetIndex && i <= dragIndex) {
         return i - 1;
-      }
-      if (_dragIndex < targetIndex && i >= _dragIndex && i < targetIndex) {
+      } else if (dragIndex < targetIndex && i >= dragIndex && i < targetIndex) {
         return i + 1;
       }
       return i;
     }).toList();
+
     List<Offset> layoutOffsets = [
       Offset(_containerSize.width, 0),
     ];
     final List<Offset> nextOffsets = [];
-    print(_indexList);
-    for (final index in _indexList) {
+
+    for (final index in indexList) {
       final size = _sizes[index];
       final offset = _getNextOffset(layoutOffsets, size);
       final layoutOffset = Offset(
@@ -146,21 +188,16 @@ class _ReorderableGridState extends State<ReorderableGrid> {
         layoutOffsets.insert(endIndex, layoutOffset);
       }
       layoutOffsets.removeRange(min(startIndex + 1, endIndex), endIndex);
-      print(
-          "offset ==> $offset layoutOffset ===> $layoutOffset, startIndex ===> $startIndex, endIndex ===> $endIndex");
-      print("layoutOffsets ===> $layoutOffsets");
     }
-    _preTransformOffsets = List.from(_transformOffsets);
-    _transformOffsets = List.generate(
-      _indexList.length,
+    _targetIndex = targetIndex;
+    _preTransformOffsets = List.from(_transformOffsetsNotifier.value);
+    _transformOffsetsNotifier.value = List.generate(
+      length,
       (index) {
-        final nextIndex = _indexList.indexWhere((i) => i == index);
+        final nextIndex = indexList.indexWhere((i) => i == index);
         return nextOffsets[nextIndex] - _offsets[index];
       },
     );
-
-    _dragIndex = targetIndex;
-    setState(() {});
   }
 
   Offset _getNextOffset(List<Offset> offsets, Size size) {
@@ -173,7 +210,6 @@ class _ReorderableGridState extends State<ReorderableGrid> {
       }
       double offsetX = 0;
       double span = 0;
-      // && offsets[j].dx >= size.width - span;
       for (int j = 0;
           span < size.width &&
               j < length &&
@@ -194,7 +230,20 @@ class _ReorderableGridState extends State<ReorderableGrid> {
     return nextOffset;
   }
 
-  Widget _builder(int index) {
+  Widget _wrapSizeBox(Widget child, int index) {
+    return ValueListenableBuilder(
+      valueListenable: _dragWidgetSizeNotifier,
+      builder: (_, size, child) {
+        return SizedBox.fromSize(
+          size: size,
+          child: child!,
+        );
+      },
+      child: child,
+    );
+  }
+
+  Widget _builderItem(int index) {
     final girdItem = children[index];
     final child = girdItem.child;
     return GridItem(
@@ -206,34 +255,24 @@ class _ReorderableGridState extends State<ReorderableGrid> {
           return Draggable(
             childWhenDragging: IgnorePointer(
               ignoring: true,
-              child: Opacity(
-                opacity: 0.2,
-                child: SizedBox(
-                  width: _dragWidgetSize.width,
-                  height: _dragWidgetSize.height,
-                  child: _wrapTransform(
-                    child,
-                    index,
-                  ),
+              child: _wrapTransform(
+                Opacity(
+                  opacity: 0.2,
+                  child: _wrapSizeBox(child, index),
                 ),
+                index,
               ),
             ),
             data: index,
-            feedback: Builder(
-              builder: (_) {
-                return IgnorePointer(
-                  ignoring: true,
-                  child: SizedBox(
-                    width: _dragWidgetSize.width,
-                    height: _dragWidgetSize.height,
-                    child: _dragWidget,
-                  ),
-                );
-              },
+            feedback: IgnorePointer(
+              ignoring: true,
+              child: _wrapSizeBox(child, index),
             ),
-            onDragCompleted: () {},
             onDragStarted: () {
               _handleDragStarted(index);
+            },
+            onDragEnd: (details) {
+              _handleDragEnd(details);
             },
             child: DragTarget<int>(
               builder: (_, __, ___) {
@@ -258,7 +297,7 @@ class _ReorderableGridState extends State<ReorderableGrid> {
       crossAxisSpacing: widget.crossAxisSpacing,
       mainAxisSpacing: widget.mainAxisSpacing,
       children: [
-        for (int i = 0; i < children.length; i++) _builder(i),
+        for (int i = 0; i < children.length; i++) _builderItem(i),
       ],
     );
   }

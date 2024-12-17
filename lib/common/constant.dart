@@ -18,6 +18,7 @@ const helperTag = "2024125";
 const httpTimeoutDuration = Duration(milliseconds: 5000);
 const moreDuration = Duration(milliseconds: 100);
 const animateDuration = Duration(milliseconds: 100);
+const commonDuration = Duration(milliseconds: 300);
 const defaultUpdateDuration = Duration(days: 1);
 const mmdbFileName = "geoip.metadb";
 const asnFileName = "ASN.mmdb";

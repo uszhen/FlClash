@@ -6,7 +6,7 @@ import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../config/network.dart';
+import '../../config/network.dart';
 
 class TUNButton extends StatelessWidget {
   const TUNButton({super.key});

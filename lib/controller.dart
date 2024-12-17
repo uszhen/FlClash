@@ -139,8 +139,14 @@ class AppController {
     }
   }
 
-  updateProviders() {
-    globalState.updateProviders(appState);
+  updateProviders() async {
+    await globalState.updateProviders(appState);
+  }
+
+  updateLocalIp() async {
+    appFlowingState.localIp = null;
+    await Future.delayed(commonDuration);
+    appFlowingState.localIp = await other.getLocalIpAddress();
   }
 
   Future<void> updateProfile(Profile profile) async {
@@ -341,10 +347,12 @@ class AppController {
     if (Platform.isAndroid) {
       globalState.updateStartTime();
     }
-    if (globalState.isStart) {
-      await updateStatus(true);
-    } else {
-      await updateStatus(config.appSetting.autoRun);
+    final status =
+        globalState.isStart == true ? true : config.appSetting.autoRun;
+
+    await updateStatus(status);
+    if (!status) {
+      addCheckIpNumDebounce();
     }
   }
 

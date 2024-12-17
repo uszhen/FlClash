@@ -1,18 +1,18 @@
 import 'dart:math';
 
-import 'package:fl_clash/common/common.dart';
-import 'package:fl_clash/fragments/dashboard/intranet_ip.dart';
-import 'package:fl_clash/fragments/dashboard/status_button.dart';
+import 'package:fl_clash/fragments/dashboard/widgets/status_button.dart';
 import 'package:fl_clash/models/models.dart';
+import 'package:fl_clash/widgets/super_grid.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import 'network_detection.dart';
-import 'network_speed.dart';
-import 'outbound_mode.dart';
-import 'start_button.dart';
-import 'traffic_usage.dart';
+import 'widgets/intranet_ip.dart';
+import 'widgets/network_detection.dart';
+import 'widgets/network_speed.dart';
+import 'widgets/outbound_mode.dart';
+import 'widgets/start_button.dart';
+import 'widgets/traffic_usage.dart';
 
 class DashboardFragment extends StatefulWidget {
   const DashboardFragment({super.key});
@@ -22,6 +22,37 @@ class DashboardFragment extends StatefulWidget {
 }
 
 class _DashboardFragmentState extends State<DashboardFragment> {
+  final items = [
+    GridItem(
+      crossAxisCellCount: 8,
+      child: NetworkSpeed(),
+    ),
+    GridItem(
+      crossAxisCellCount: 4,
+      child: TUNButton(),
+    ),
+    GridItem(
+      crossAxisCellCount: 4,
+      child: SystemProxyButton(),
+    ),
+    GridItem(
+      crossAxisCellCount: 4,
+      child: OutboundMode(),
+    ),
+    GridItem(
+      crossAxisCellCount: 4,
+      child: NetworkDetection(),
+    ),
+    GridItem(
+      crossAxisCellCount: 4,
+      child: TrafficUsage(),
+    ),
+    GridItem(
+      crossAxisCellCount: 4,
+      child: IntranetIP(),
+    ),
+  ];
+
   _initFab(bool isCurrent) {
     if (!isCurrent) {
       return;
@@ -51,41 +82,18 @@ class _DashboardFragmentState extends State<DashboardFragment> {
             selector: (_, appState) => appState.viewWidth,
             builder: (_, viewWidth, ___) {
               final columns = max(4 * ((viewWidth / 350).ceil()), 8);
-              final int switchCount = (4 / columns) * viewWidth < 200 ? 8 : 4;
-              return ReorderableGrid(
+              return SuperGrid(
                 crossAxisCount: columns,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                children: [
-                  const GridItem(
-                    crossAxisCellCount: 8,
-                    child: NetworkSpeed(),
-                  ),
-                  GridItem(
-                    crossAxisCellCount: switchCount,
-                    child: const TUNButton(),
-                  ),
-                  GridItem(
-                    crossAxisCellCount: switchCount,
-                    child: const SystemProxyButton(),
-                  ),
-                  const GridItem(
-                    crossAxisCellCount: 4,
-                    child: OutboundMode(),
-                  ),
-                  const GridItem(
-                    crossAxisCellCount: 4,
-                    child: TrafficUsage(),
-                  ),
-                  // const GridItem(
-                  //   crossAxisCellCount: 4,
-                  //   child: NetworkDetection(),
-                  // ),
-                  // const GridItem(
-                  //   crossAxisCellCount: 4,
-                  //   child: IntranetIP(),
-                  // ),
-                ],
+                children: items,
+                onReorder: (newIndex, oldIndex) {
+                  print("$newIndex $oldIndex");
+                  setState(() {
+                    final removeAt = items.removeAt(oldIndex);
+                    items.insert(newIndex, removeAt);
+                  });
+                },
               );
             },
           ),

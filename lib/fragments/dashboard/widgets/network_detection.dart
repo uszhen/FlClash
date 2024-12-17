@@ -85,19 +85,18 @@ class _NetworkDetectionState extends State<NetworkDetection> {
       selector: (_, appState) {
         return appState.checkIpNum;
       },
-      builder: (_, checkIpNum, child) {
-        if (_checkIpDebounce != null) {
+      shouldRebuild: (prev, next) {
+        if(prev != next){
+          _checkIpDebounce ??= debounce(_checkIp);
           _checkIpDebounce!();
         }
+        return prev != next;
+      },
+      builder: (_, checkIpNum, child) {
         return child!;
       },
       child: child,
     );
-  }
-
-  @override
-  dispose() {
-    super.dispose();
   }
 
   String countryCodeToEmoji(String countryCode) {
@@ -112,7 +111,6 @@ class _NetworkDetectionState extends State<NetworkDetection> {
 
   @override
   Widget build(BuildContext context) {
-    _checkIpDebounce ??= debounce(_checkIp);
     return _checkIpContainer(
       ValueListenableBuilder<NetworkDetectionState>(
         valueListenable: networkDetectionState,
