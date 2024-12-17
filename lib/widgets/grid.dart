@@ -372,15 +372,10 @@ class _Origin {
 }
 
 _Origin _getOrigin(List<double> offsets, int crossAxisCount) {
-  //获取所有crossCount
-  var length = offsets.length;
-
-  //设置原点
-  var origin = const _Origin(0, double.infinity);
+  final length = offsets.length;
+  _Origin origin = const _Origin(0, double.infinity);
   for (int i = 0; i < length; i++) {
-    //获取指定列的的高度
     final offset = offsets[i];
-    //如果高度比最大便宜量大就停止
     if (offset.moreOrEqual(origin.mainAxisOffset)) {
       continue;
     }
@@ -391,7 +386,6 @@ _Origin _getOrigin(List<double> offsets, int crossAxisCount) {
             j < length &&
             length - j >= crossAxisCount - span;
         j++) {
-      //当高度比零时offset大时，增加span，当span刚好容纳下下一个字节电时，修改origin，否则走到下一个元素，重新判断
       if (offset.moreOrEqual(offsets[j])) {
         span++;
         if (span == crossAxisCount) {

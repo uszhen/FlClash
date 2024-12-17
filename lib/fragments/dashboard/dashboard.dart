@@ -88,7 +88,6 @@ class _DashboardFragmentState extends State<DashboardFragment> {
                 mainAxisSpacing: 16,
                 children: items,
                 onReorder: (newIndex, oldIndex) {
-                  print("$newIndex $oldIndex");
                   setState(() {
                     final removeAt = items.removeAt(oldIndex);
                     items.insert(newIndex, removeAt);

@@ -1,6 +1,8 @@
 import 'dart:math';
 
+import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/common/num.dart';
+import 'package:fl_clash/fragments/dashboard/widgets/network_detection.dart';
 import 'package:fl_clash/widgets/grid.dart';
 import 'package:flutter/material.dart';
 
@@ -145,6 +147,8 @@ class _SuperGridState extends State<SuperGrid> {
       return i;
     }).toList();
 
+    // print(children.map((e) => e.child.runtimeType));
+
     List<Offset> layoutOffsets = [
       Offset(_containerSize.width, 0),
     ];
@@ -152,6 +156,8 @@ class _SuperGridState extends State<SuperGrid> {
 
     for (final index in indexList) {
       final size = _sizes[index];
+      print(widget.children[index].child.runtimeType);
+      print(_sizes[index]);
       final offset = _getNextOffset(layoutOffsets, size);
       final layoutOffset = Offset(
         min(
@@ -188,6 +194,9 @@ class _SuperGridState extends State<SuperGrid> {
         layoutOffsets.insert(endIndex, layoutOffset);
       }
       layoutOffsets.removeRange(min(startIndex + 1, endIndex), endIndex);
+      print(
+          "offset ==> $offset layoutOffset ===> $layoutOffset, startIndex ===> $startIndex, endIndex ===> $endIndex");
+      print("layoutOffsets ===> $layoutOffsets");
     }
     _targetIndex = targetIndex;
     _preTransformOffsets = List.from(_transformOffsetsNotifier.value);
@@ -217,12 +226,12 @@ class _SuperGridState extends State<SuperGrid> {
           j++) {
         final tempOffset = offsets[j];
         if (offset.dy.moreOrEqual(tempOffset.dy)) {
-          span += tempOffset.dx;
+          span = tempOffset.dx - offsetX;
           if (span >= size.width) {
             nextOffset = Offset(offsetX, offset.dy);
           }
         } else {
-          offsetX += tempOffset.dx;
+          offsetX = tempOffset.dx;
           span = 0;
         }
       }
@@ -258,7 +267,10 @@ class _SuperGridState extends State<SuperGrid> {
               child: _wrapTransform(
                 Opacity(
                   opacity: 0.2,
-                  child: _wrapSizeBox(child, index),
+                  child: _wrapSizeBox(
+                    child,
+                    index,
+                  ),
                 ),
                 index,
               ),
