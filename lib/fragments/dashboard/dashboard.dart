@@ -1,8 +1,9 @@
+
 import 'dart:math';
 
+import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/fragments/dashboard/widgets/status_button.dart';
 import 'package:fl_clash/models/models.dart';
-import 'package:fl_clash/widgets/super_grid.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -27,14 +28,16 @@ class _DashboardFragmentState extends State<DashboardFragment> {
       crossAxisCellCount: 8,
       child: NetworkSpeed(),
     ),
-    GridItem(
-      crossAxisCellCount: 4,
-      child: TUNButton(),
-    ),
-    GridItem(
-      crossAxisCellCount: 4,
-      child: SystemProxyButton(),
-    ),
+    if (system.isDesktop) ...[
+      GridItem(
+        crossAxisCellCount: 4,
+        child: TUNButton(),
+      ),
+      GridItem(
+        crossAxisCellCount: 4,
+        child: SystemProxyButton(),
+      ),
+    ],
     GridItem(
       crossAxisCellCount: 4,
       child: OutboundMode(),
@@ -76,7 +79,7 @@ class _DashboardFragmentState extends State<DashboardFragment> {
         alignment: Alignment.topCenter,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16).copyWith(
-            bottom: 0,
+            bottom: 88,
           ),
           child: Selector<AppState, double>(
             selector: (_, appState) => appState.viewWidth,

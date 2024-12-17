@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
@@ -252,6 +253,40 @@ class _SuperGridState extends State<SuperGrid> {
     );
   }
 
+  Widget _wrapDraggable({
+    required Widget childWhenDragging,
+    required Widget feedback,
+    required Widget target,
+    required int index,
+  }) {
+    if (system.isDesktop) {
+      return Draggable(
+        childWhenDragging: childWhenDragging,
+        data: index,
+        feedback: feedback,
+        onDragStarted: () {
+          _handleDragStarted(index);
+        },
+        onDragEnd: (details) {
+          _handleDragEnd(details);
+        },
+        child: target,
+      );
+    }
+    return LongPressDraggable(
+      childWhenDragging: childWhenDragging,
+      data: index,
+      feedback: feedback,
+      onDragStarted: () {
+        _handleDragStarted(index);
+      },
+      onDragEnd: (details) {
+        _handleDragEnd(details);
+      },
+      child: target,
+    );
+  }
+
   Widget _builderItem(int index) {
     final girdItem = children[index];
     final child = girdItem.child;
@@ -261,40 +296,37 @@ class _SuperGridState extends State<SuperGrid> {
       child: Builder(
         builder: (context) {
           _itemContexts[index] = context;
-          return Draggable(
-            childWhenDragging: IgnorePointer(
-              ignoring: true,
-              child: _wrapTransform(
-                Opacity(
-                  opacity: 0.2,
-                  child: _wrapSizeBox(
-                    child,
-                    index,
-                  ),
+          final childWhenDragging = IgnorePointer(
+            ignoring: true,
+            child: _wrapTransform(
+              Opacity(
+                opacity: 0.2,
+                child: _wrapSizeBox(
+                  child,
+                  index,
                 ),
-                index,
               ),
+              index,
             ),
-            data: index,
-            feedback: IgnorePointer(
-              ignoring: true,
-              child: _wrapSizeBox(child, index),
-            ),
-            onDragStarted: () {
-              _handleDragStarted(index);
+          );
+          final feedback = IgnorePointer(
+            ignoring: true,
+            child: _wrapSizeBox(child, index),
+          );
+          final target = DragTarget<int>(
+            builder: (_, __, ___) {
+              return _wrapTransform(child, index);
             },
-            onDragEnd: (details) {
-              _handleDragEnd(details);
+            onWillAcceptWithDetails: (_) {
+              _handleWill(index);
+              return false;
             },
-            child: DragTarget<int>(
-              builder: (_, __, ___) {
-                return _wrapTransform(child, index);
-              },
-              onWillAcceptWithDetails: (_) {
-                _handleWill(index);
-                return false;
-              },
-            ),
+          );
+          return _wrapDraggable(
+            childWhenDragging: childWhenDragging,
+            feedback: feedback,
+            target: target,
+            index: index,
           );
         },
       ),
