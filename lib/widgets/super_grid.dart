@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/widgets/card.dart';
 import 'package:fl_clash/widgets/grid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/physics.dart';
@@ -39,6 +40,7 @@ class _SuperGridState extends State<SuperGrid>
   List<Size> _sizes = [];
   List<Offset> _offsets = [];
   Offset _parentOffset = Offset.zero;
+  Function? _handleWillDebounce;
 
   final ValueNotifier<List<Tween<Offset>>> _transformTweenListNotifier =
       ValueNotifier([]);
@@ -115,7 +117,8 @@ class _SuperGridState extends State<SuperGrid>
                 begin: transformTweenList[index].begin,
                 end: transformTweenList[index].end,
               ),
-              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeInOut,
+              duration: commonDuration,
               builder: (_, offset, child) {
                 return Transform.translate(
                   offset: offset,
@@ -181,12 +184,11 @@ class _SuperGridState extends State<SuperGrid>
     _initState();
   }
 
-  _handleWill(int index) {
+  _handleWill(int index) async {
     final dragIndex = _dragIndexNotifier.value;
     if (dragIndex < 0 || dragIndex > _offsets.length - 1) {
       return;
     }
-
     final targetIndex = index;
     final indexList = List.generate(length, (i) {
       if (i == targetIndex) return _dragIndexNotifier.value;
@@ -369,7 +371,11 @@ class _SuperGridState extends State<SuperGrid>
               Opacity(
                 opacity: 0.2,
                 child: _sizeBoxWrap(
-                  child,
+                  CommonCard(
+                    child: Container(
+                      color: context.colorScheme.primary,
+                    ),
+                  ),
                   index,
                 ),
               ),
@@ -378,14 +384,23 @@ class _SuperGridState extends State<SuperGrid>
           );
           final feedback = IgnorePointer(
             ignoring: true,
-            child: _sizeBoxWrap(child, index),
+            child: _sizeBoxWrap(
+              CommonCard(
+                child: Material(
+                  elevation: 6,
+                  child: child,
+                ),
+              ),
+              index,
+            ),
           );
           final target = DragTarget<int>(
             builder: (_, __, ___) {
               return _wrapTransform(child, index);
             },
             onWillAcceptWithDetails: (_) {
-              _handleWill(index);
+              _handleWillDebounce ??= debounce(_handleWill);
+              _handleWillDebounce!([index]);
               return false;
             },
           );
@@ -418,6 +433,7 @@ class _SuperGridState extends State<SuperGrid>
               );
             },
             child: IgnorePointer(
+              ignoring: true,
               child: children[index].child,
             ),
           ),
