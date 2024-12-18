@@ -1,7 +1,3 @@
-import 'dart:async';
-import 'dart:io';
-
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/models/app.dart';
 import 'package:fl_clash/state.dart';

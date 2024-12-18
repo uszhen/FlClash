@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/widgets/card.dart';
 import 'package:fl_clash/widgets/grid.dart';
 import 'package:flutter/material.dart';
@@ -33,6 +34,7 @@ class _SuperGridState extends State<SuperGrid>
   List<GridItem> get children => widget.children;
 
   int get length => widget.children.length;
+  List<int> _indexList = [];
   List<BuildContext?> _itemContexts = [];
   Size _containerSize = Size.zero;
   int _targetIndex = -1;
@@ -40,7 +42,7 @@ class _SuperGridState extends State<SuperGrid>
   List<Size> _sizes = [];
   List<Offset> _offsets = [];
   Offset _parentOffset = Offset.zero;
-  Function? _handleWillDebounce;
+  bool _transforming = false;
 
   final ValueNotifier<List<Tween<Offset>>> _transformTweenListNotifier =
       ValueNotifier([]);
@@ -63,6 +65,7 @@ class _SuperGridState extends State<SuperGrid>
         end: Offset.zero,
       ),
     );
+    _indexList = List.generate(length, (index) => index);
     _sizes = List.generate(length, (index) => Size.zero);
     _offsets = [];
     _containerSize = Size.zero;
@@ -102,34 +105,25 @@ class _SuperGridState extends State<SuperGrid>
         return child!;
       },
       child: ValueListenableBuilder(
-        valueListenable: _dragIndexNotifier,
-        builder: (_, dragIndex, child) {
-          if (dragIndex == -1) {
-            return rawChild;
-          }
-          return child!;
+        valueListenable: _transformTweenListNotifier,
+        builder: (_, transformTweenList, child) {
+          return TweenAnimationBuilder<Offset>(
+            tween: Tween(
+              begin: transformTweenList[index].begin,
+              end: transformTweenList[index].end,
+            ),
+            curve: Curves.easeInOut,
+            duration: commonDuration,
+            builder: (_, offset, child) {
+              return Transform.translate(
+                offset: offset,
+                child: child!,
+              );
+            },
+            child: child!,
+          );
         },
-        child: ValueListenableBuilder(
-          valueListenable: _transformTweenListNotifier,
-          builder: (_, transformTweenList, child) {
-            return TweenAnimationBuilder<Offset>(
-              tween: Tween(
-                begin: transformTweenList[index].begin,
-                end: transformTweenList[index].end,
-              ),
-              curve: Curves.easeInOut,
-              duration: commonDuration,
-              builder: (_, offset, child) {
-                return Transform.translate(
-                  offset: offset,
-                  child: child!,
-                );
-              },
-              child: child!,
-            );
-          },
-          child: rawChild,
-        ),
+        child: rawChild,
       ),
     );
   }
@@ -178,34 +172,43 @@ class _SuperGridState extends State<SuperGrid>
     ).animate(_controller);
     _animating.value = true;
     await _controller.animateWith(simulation);
-    // await Future.delayed(Duration(milliseconds: 300));
     _animating.value = false;
     _fakeDragWidgetAnimation = null;
     _initState();
   }
 
   _handleWill(int index) async {
+    if (_transforming == true) {
+      return;
+    }
+    _transforming = true;
     final dragIndex = _dragIndexNotifier.value;
     if (dragIndex < 0 || dragIndex > _offsets.length - 1) {
       return;
     }
-    final targetIndex = index;
-    final indexList = List.generate(length, (i) {
+    final targetIndex = _indexList.indexWhere((i) => i == index);
+    if (_targetIndex == targetIndex) {
+      return;
+    }
+    _indexList = List.generate(length, (i) {
       if (i == targetIndex) return _dragIndexNotifier.value;
-      if (dragIndex > targetIndex && i > targetIndex && i <= dragIndex) {
-        return i - 1;
-      } else if (dragIndex < targetIndex && i >= dragIndex && i < targetIndex) {
-        return i + 1;
+      if (_targetIndex > targetIndex && i > targetIndex && i <= _targetIndex) {
+        return _indexList[i - 1];
+      } else if (_targetIndex < targetIndex &&
+          i >= _targetIndex &&
+          i < targetIndex) {
+        return _indexList[i + 1];
       }
-      return i;
+      return _indexList[i];
     }).toList();
+    _targetIndex = targetIndex;
 
     List<Offset> layoutOffsets = [
       Offset(_containerSize.width, 0),
     ];
     final List<Offset> nextOffsets = [];
 
-    for (final index in indexList) {
+    for (final index in _indexList) {
       final size = _sizes[index];
       final offset = _getNextOffset(layoutOffsets, size);
       final layoutOffset = Offset(
@@ -243,16 +246,12 @@ class _SuperGridState extends State<SuperGrid>
         layoutOffsets.insert(endIndex, layoutOffset);
       }
       layoutOffsets.removeRange(min(startIndex + 1, endIndex), endIndex);
-      print(
-          "offset ==> $offset layoutOffset ===> $layoutOffset, startIndex ===> $startIndex, endIndex ===> $endIndex");
-      print("layoutOffsets ===> $layoutOffsets");
     }
-    _targetIndex = targetIndex;
-    _targetOffset = nextOffsets[targetIndex];
+    _targetOffset = nextOffsets[_targetIndex];
     _transformTweenListNotifier.value = List.generate(
       length,
       (index) {
-        final nextIndex = indexList.indexWhere((i) => i == index);
+        final nextIndex = _indexList.indexWhere((i) => i == index);
         final offset = nextOffsets[nextIndex] - _offsets[index];
         return Tween(
           begin: _transformTweenListNotifier.value[index].begin,
@@ -260,6 +259,7 @@ class _SuperGridState extends State<SuperGrid>
         );
       },
     );
+    _transforming = false;
   }
 
   Offset _getNextOffset(List<Offset> offsets, Size size) {
@@ -328,32 +328,31 @@ class _SuperGridState extends State<SuperGrid>
     required Widget target,
     required int index,
   }) {
-    if (system.isDesktop) {
-      return Draggable(
-        childWhenDragging: childWhenDragging,
-        data: index,
-        feedback: feedback,
-        onDragStarted: () {
-          _handleDragStarted(index);
-        },
-        onDragEnd: (details) {
-          _handleDragEnd(details);
-        },
-        child: target,
-      );
-    }
-    return LongPressDraggable(
-      childWhenDragging: childWhenDragging,
-      data: index,
-      feedback: feedback,
-      onDragStarted: () {
-        _handleDragStarted(index);
-      },
-      onDragEnd: (details) {
-        _handleDragEnd(details);
-      },
-      child: target,
-    );
+    return system.isDesktop
+        ? Draggable(
+            childWhenDragging: childWhenDragging,
+            data: index,
+            feedback: feedback,
+            onDragStarted: () {
+              _handleDragStarted(index);
+            },
+            onDragEnd: (details) {
+              _handleDragEnd(details);
+            },
+            child: target,
+          )
+        : LongPressDraggable(
+            childWhenDragging: childWhenDragging,
+            data: index,
+            feedback: feedback,
+            onDragStarted: () {
+              _handleDragStarted(index);
+            },
+            onDragEnd: (details) {
+              _handleDragEnd(details);
+            },
+            child: target,
+          );
   }
 
   Widget _builderItem(int index) {
@@ -367,19 +366,16 @@ class _SuperGridState extends State<SuperGrid>
           _itemContexts[index] = context;
           final childWhenDragging = IgnorePointer(
             ignoring: true,
-            child: _wrapTransform(
-              Opacity(
-                opacity: 0.2,
-                child: _sizeBoxWrap(
-                  CommonCard(
-                    child: Container(
-                      color: context.colorScheme.primary,
-                    ),
+            child: Opacity(
+              opacity: 0.2,
+              child: _sizeBoxWrap(
+                CommonCard(
+                  child: Container(
+                    color: context.colorScheme.primary,
                   ),
-                  index,
                 ),
+                index,
               ),
-              index,
             ),
           );
           final feedback = IgnorePointer(
@@ -396,19 +392,22 @@ class _SuperGridState extends State<SuperGrid>
           );
           final target = DragTarget<int>(
             builder: (_, __, ___) {
-              return _wrapTransform(child, index);
+              return child;
             },
             onWillAcceptWithDetails: (_) {
-              _handleWillDebounce ??= debounce(_handleWill);
-              _handleWillDebounce!([index]);
+              debouncer.call(DebounceTag.handleWill, _handleWill, args: [index]);
               return false;
             },
           );
-          return _draggableWrap(
-            childWhenDragging: childWhenDragging,
-            feedback: feedback,
-            target: target,
-            index: index,
+
+          return _wrapTransform(
+            _draggableWrap(
+              childWhenDragging: childWhenDragging,
+              feedback: feedback,
+              target: target,
+              index: index,
+            ),
+            index,
           );
         },
       ),

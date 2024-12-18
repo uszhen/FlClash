@@ -195,12 +195,6 @@ class ProxiesActionsState with _$ProxiesActionsState {
   }) = _ProxiesActionsState;
 }
 
-@freezed
-class AutoLaunchState with _$AutoLaunchState {
-  const factory AutoLaunchState({
-    required bool isAutoLaunch,
-  }) = _AutoLaunchState;
-}
 
 @freezed
 class ProxyState with _$ProxyState {

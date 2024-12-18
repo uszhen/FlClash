@@ -264,7 +264,7 @@ class Other {
       });
       return addresses.first.address;
     }
-    return null;
+    return "";
   }
 }
 

@@ -23,40 +23,47 @@ class AppController {
   late AppFlowingState appFlowingState;
   late Config config;
   late ClashConfig clashConfig;
-  late Function updateClashConfigDebounce;
-  late Function updateGroupDebounce;
-  late Function addCheckIpNumDebounce;
-  late Function applyProfileDebounce;
-  late Function savePreferencesDebounce;
-  late Function changeProxyDebounce;
 
   AppController(this.context) {
     appState = context.read<AppState>();
     config = context.read<Config>();
     clashConfig = context.read<ClashConfig>();
     appFlowingState = context.read<AppFlowingState>();
-    updateClashConfigDebounce = debounce<Function()>(() async {
-      await updateClashConfig();
+  }
+
+  updateClashConfigDebounce() {
+    debouncer.call(DebounceTag.updateClashConfig, updateClashConfig);
+  }
+
+  updateGroupsDebounce() {
+    debouncer.call(DebounceTag.updateGroups, updateGroups);
+  }
+
+  addCheckIpNumDebounce() {
+    debouncer.call(DebounceTag.addCheckIpNum, () {
+      appState.checkIpNum++;
     });
-    savePreferencesDebounce = debounce<Function()>(() async {
-      await savePreferences();
+  }
+
+  applyProfileDebounce() {
+    debouncer.call(DebounceTag.addCheckIpNum, () {
+      applyProfile(isPrue: true);
     });
-    applyProfileDebounce = debounce<Function()>(() async {
-      await applyProfile(isPrue: true);
-    });
-    changeProxyDebounce = debounce((String groupName, String proxyName) async {
+  }
+
+  savePreferencesDebounce() {
+    debouncer.call(DebounceTag.savePreferences, savePreferences);
+  }
+
+  changeProxyDebounce(String groupName, String proxyName) {
+    debouncer.call(DebounceTag.changeProxy,
+        (String groupName, String proxyName) async {
       await changeProxy(
         groupName: groupName,
         proxyName: proxyName,
       );
       await updateGroups();
-    });
-    addCheckIpNumDebounce = debounce(() {
-      appState.checkIpNum++;
-    });
-    updateGroupDebounce = debounce(() async {
-      await updateGroups();
-    });
+    }, args: [groupName, proxyName]);
   }
 
   restartCore() async {
@@ -339,6 +346,9 @@ class AppController {
       config: config,
     );
     await _initStatus();
+    autoLaunch?.updateStatus(
+      config.appSetting.autoLaunch,
+    );
     autoUpdateProfiles();
     autoCheckUpdate();
   }

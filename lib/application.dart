@@ -114,7 +114,7 @@ class ApplicationState extends State<Application> {
     _cancelTimer();
     timer = Timer.periodic(const Duration(milliseconds: 20000), (_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        globalState.appController.updateGroupDebounce();
+        globalState.appController.updateGroupsDebounce();
       });
     });
   }

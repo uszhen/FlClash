@@ -25,7 +25,6 @@ class NetworkDetection extends StatefulWidget {
 
 class _NetworkDetectionState extends State<NetworkDetection> {
   bool? _preIsStart;
-  Function? _checkIpDebounce;
   Timer? _setTimeoutTimer;
   CancelToken? cancelToken;
 
@@ -86,9 +85,8 @@ class _NetworkDetectionState extends State<NetworkDetection> {
         return appState.checkIpNum;
       },
       shouldRebuild: (prev, next) {
-        if(prev != next){
-          _checkIpDebounce ??= debounce(_checkIp);
-          _checkIpDebounce!();
+        if (prev != next) {
+          debouncer.call(DebounceTag.checkIp, _checkIp);
         }
         return prev != next;
       },

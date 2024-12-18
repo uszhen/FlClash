@@ -214,3 +214,17 @@ enum WindowsHelperServiceStatus {
   presence,
   running,
 }
+
+enum DebounceTag {
+  updateClashConfig,
+  updateGroups,
+  addCheckIpNum,
+  applyProfile,
+  savePreferences,
+  changeProxy,
+  checkIp,
+  handleWill,
+  updateDelay,
+  vpnTip,
+  autoLaunch
+}
