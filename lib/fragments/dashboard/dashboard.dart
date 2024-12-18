@@ -1,4 +1,3 @@
-
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
@@ -23,6 +22,8 @@ class DashboardFragment extends StatefulWidget {
 }
 
 class _DashboardFragmentState extends State<DashboardFragment> {
+  ValueNotifier<bool> isEditNotifier = ValueNotifier(false);
+
   final items = [
     GridItem(
       crossAxisCellCount: 8,
@@ -56,7 +57,7 @@ class _DashboardFragmentState extends State<DashboardFragment> {
     ),
   ];
 
-  _initFab(bool isCurrent) {
+  _initScaffold(bool isCurrent) {
     if (!isCurrent) {
       return;
     }
@@ -64,6 +65,23 @@ class _DashboardFragmentState extends State<DashboardFragment> {
       final commonScaffoldState =
           context.findAncestorStateOfType<CommonScaffoldState>();
       commonScaffoldState?.floatingActionButton = const StartButton();
+      commonScaffoldState?.actions = [
+        IconButton(
+          icon: ValueListenableBuilder(
+            valueListenable: isEditNotifier,
+            builder: (_, isEdit, ___) {
+              return isEdit
+                  ? Icon(Icons.save)
+                  : Icon(
+                      Icons.edit,
+                    );
+            },
+          ),
+          onPressed: () {
+            isEditNotifier.value = !isEditNotifier.value;
+          },
+        ),
+      ];
     });
   }
 
@@ -72,7 +90,7 @@ class _DashboardFragmentState extends State<DashboardFragment> {
     return ActiveBuilder(
       label: "dashboard",
       builder: (isCurrent, child) {
-        _initFab(isCurrent);
+        _initScaffold(isCurrent);
         return child!;
       },
       child: Align(
@@ -81,20 +99,31 @@ class _DashboardFragmentState extends State<DashboardFragment> {
           padding: const EdgeInsets.all(16).copyWith(
             bottom: 88,
           ),
-          child: Selector<AppState, double>(
-            selector: (_, appState) => appState.viewWidth,
-            builder: (_, viewWidth, ___) {
-              final columns = max(4 * ((viewWidth / 350).ceil()), 8);
-              return SuperGrid(
-                crossAxisCount: columns,
-                crossAxisSpacing: 16,
-                mainAxisSpacing: 16,
-                children: items,
-                onReorder: (newIndex, oldIndex) {
-                  setState(() {
-                    final removeAt = items.removeAt(oldIndex);
-                    items.insert(newIndex, removeAt);
-                  });
+          child: ValueListenableBuilder(
+            valueListenable: isEditNotifier,
+            builder: (_, isEdit, ___) {
+              return Selector<AppState, double>(
+                selector: (_, appState) => appState.viewWidth,
+                builder: (_, viewWidth, ___) {
+                  final columns = max(4 * ((viewWidth / 350).ceil()), 8);
+                  return SuperGrid(
+                    isEdit: isEdit,
+                    crossAxisCount: columns,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    children: items,
+                    onReorder: (newIndex, oldIndex) {
+                      setState(() {
+                        final removeAt = items.removeAt(oldIndex);
+                        items.insert(newIndex, removeAt);
+                      });
+                    },
+                    onDelete: (index) {
+                      // setState(() {
+                      //   items.removeAt(index);
+                      // });
+                    },
+                  );
                 },
               );
             },

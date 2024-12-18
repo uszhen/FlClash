@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:defer_pointer/defer_pointer.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/widgets/card.dart';
@@ -15,6 +16,8 @@ class SuperGrid extends StatefulWidget {
   final double crossAxisSpacing;
   final int crossAxisCount;
   final Function(int newIndex, int oldIndex)? onReorder;
+  final Function(int index)? onDelete;
+  final bool isEdit;
 
   const SuperGrid({
     super.key,
@@ -23,17 +26,18 @@ class SuperGrid extends StatefulWidget {
     this.mainAxisSpacing = 0,
     this.crossAxisSpacing = 0,
     this.onReorder,
+    this.onDelete,
+    this.isEdit = false,
   });
 
   @override
-  State<SuperGrid> createState() => _SuperGridState();
+  State<SuperGrid> createState() => SuperGridState();
 }
 
-class _SuperGridState extends State<SuperGrid>
-    with SingleTickerProviderStateMixin {
-  List<GridItem> get children => widget.children;
+class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
+  List<GridItem> get children => List.from(widget.children);
 
-  int get length => widget.children.length;
+  int get length => children.length;
   List<int> _indexList = [];
   List<BuildContext?> _itemContexts = [];
   Size _containerSize = Size.zero;
@@ -42,7 +46,8 @@ class _SuperGridState extends State<SuperGrid>
   List<Size> _sizes = [];
   List<Offset> _offsets = [];
   Offset _parentOffset = Offset.zero;
-  bool _transforming = false;
+  EdgeDraggingAutoScroller? _edgeDraggingAutoScroller;
+  final ValueNotifier<bool> isEditNotifier = ValueNotifier(false);
 
   final ValueNotifier<List<Tween<Offset>>> _transformTweenListNotifier =
       ValueNotifier([]);
@@ -52,8 +57,13 @@ class _SuperGridState extends State<SuperGrid>
   final _dragWidgetSizeNotifier = ValueNotifier(Size.zero);
   final _dragIndexNotifier = ValueNotifier(-1);
 
-  late AnimationController _controller;
+  late AnimationController _fakeDragWidgetController;
   Animation<Offset>? _fakeDragWidgetAnimation;
+
+  late AnimationController _controller;
+  late Animation<double> _animation;
+  Rect _dragRect = Rect.zero;
+  Scrollable? _scrollable;
 
   int get crossCount => widget.crossAxisCount;
 
@@ -73,6 +83,7 @@ class _SuperGridState extends State<SuperGrid>
     _dragWidgetSizeNotifier.value = Size.zero;
     _targetOffset = Offset.zero;
     _parentOffset = Offset.zero;
+    _dragRect = Rect.zero;
   }
 
   @override
@@ -82,11 +93,52 @@ class _SuperGridState extends State<SuperGrid>
       length,
       null,
     );
-    _controller = AnimationController.unbounded(
+    _fakeDragWidgetController = AnimationController.unbounded(
       vsync: this,
       duration: commonDuration,
     );
+    _controller = AnimationController(
+      vsync: this,
+      duration: Duration(milliseconds: 120),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(
+      begin: -0.012,
+      end: 0.018,
+    ).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeInOut,
+      ),
+    );
+    isEditNotifier.value = widget.isEdit;
     _initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final scrollable = context.findAncestorWidgetOfExactType<Scrollable>();
+    if (scrollable == null) {
+      return;
+    }
+    if (_scrollable != scrollable) {
+      _edgeDraggingAutoScroller = EdgeDraggingAutoScroller(
+        Scrollable.of(context),
+        onScrollViewScrolled: () {
+          _edgeDraggingAutoScroller?.startAutoScrollIfNecessary(_dragRect);
+        },
+        velocityScalar: 40,
+      );
+    }
+  }
+
+  @override
+  void didUpdateWidget(SuperGrid oldWidget) {
+    if (widget.isEdit != oldWidget.isEdit) {
+      isEditNotifier.value = widget.isEdit;
+    }
+    super.didUpdateWidget(oldWidget);
   }
 
   Widget _wrapTransform(Widget rawChild, int index) {
@@ -143,6 +195,12 @@ class _SuperGridState extends State<SuperGrid>
     _targetIndex = index;
     _targetOffset = _offsets[index];
     _containerSize = context.size!;
+    _dragRect = Rect.fromLTWH(
+      _targetOffset.dx + _parentOffset.dx,
+      _targetOffset.dy + _parentOffset.dy,
+      _sizes[index].width,
+      _sizes[index].height,
+    );
   }
 
   _handleDragEnd(DraggableDetails details) async {
@@ -169,19 +227,23 @@ class _SuperGridState extends State<SuperGrid>
     _fakeDragWidgetAnimation = Tween(
       begin: details.offset - _parentOffset,
       end: _targetOffset,
-    ).animate(_controller);
+    ).animate(_fakeDragWidgetController);
     _animating.value = true;
-    await _controller.animateWith(simulation);
+    await _fakeDragWidgetController.animateWith(simulation);
     _animating.value = false;
     _fakeDragWidgetAnimation = null;
     _initState();
   }
 
+  _handleDragUpdate(DragUpdateDetails details) {
+    _dragRect = _dragRect.translate(
+      0,
+      details.delta.dy,
+    );
+    _edgeDraggingAutoScroller?.startAutoScrollIfNecessary(_dragRect);
+  }
+
   _handleWill(int index) async {
-    if (_transforming == true) {
-      return;
-    }
-    _transforming = true;
     final dragIndex = _dragIndexNotifier.value;
     if (dragIndex < 0 || dragIndex > _offsets.length - 1) {
       return;
@@ -202,12 +264,15 @@ class _SuperGridState extends State<SuperGrid>
       return _indexList[i];
     }).toList();
     _targetIndex = targetIndex;
+    final nextOffsets = _transform();
+    _targetOffset = nextOffsets[_targetIndex];
+  }
 
+  List<Offset> _transform() {
     List<Offset> layoutOffsets = [
       Offset(_containerSize.width, 0),
     ];
     final List<Offset> nextOffsets = [];
-
     for (final index in _indexList) {
       final size = _sizes[index];
       final offset = _getNextOffset(layoutOffsets, size);
@@ -247,9 +312,8 @@ class _SuperGridState extends State<SuperGrid>
       }
       layoutOffsets.removeRange(min(startIndex + 1, endIndex), endIndex);
     }
-    _targetOffset = nextOffsets[_targetIndex];
     _transformTweenListNotifier.value = List.generate(
-      length,
+      _indexList.length,
       (index) {
         final nextIndex = _indexList.indexWhere((i) => i == index);
         final offset = nextOffsets[nextIndex] - _offsets[index];
@@ -259,7 +323,7 @@ class _SuperGridState extends State<SuperGrid>
         );
       },
     );
-    _transforming = false;
+    return nextOffsets;
   }
 
   Offset _getNextOffset(List<Offset> offsets, Size size) {
@@ -322,37 +386,82 @@ class _SuperGridState extends State<SuperGrid>
     );
   }
 
+  Widget _shakeWrap(Widget child) {
+    final random = 0.7 + Random().nextDouble() * 0.3;
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (_, child) {
+        return Transform.rotate(
+          angle: _animation.value * random,
+          child: child!,
+        );
+      },
+      child: child,
+    );
+  }
+
+  _handleDelete(int index) {
+    children.removeAt(index);
+    _indexList.removeAt(index);
+    _transform();
+    if (widget.onDelete != null) {
+      widget.onDelete!(index);
+    }
+  }
+
   Widget _draggableWrap({
     required Widget childWhenDragging,
     required Widget feedback,
     required Widget target,
     required int index,
   }) {
-    return system.isDesktop
-        ? Draggable(
-            childWhenDragging: childWhenDragging,
-            data: index,
-            feedback: feedback,
-            onDragStarted: () {
-              _handleDragStarted(index);
+    return ValueListenableBuilder(
+      valueListenable: isEditNotifier,
+      builder: (_, isEdit, child) {
+        if (!isEdit) {
+          return target;
+        }
+        return _shakeWrap(
+          _DeletableContainer(
+            onDelete: () {
+              _handleDelete(index);
             },
-            onDragEnd: (details) {
-              _handleDragEnd(details);
-            },
-            child: target,
-          )
-        : LongPressDraggable(
-            childWhenDragging: childWhenDragging,
-            data: index,
-            feedback: feedback,
-            onDragStarted: () {
-              _handleDragStarted(index);
-            },
-            onDragEnd: (details) {
-              _handleDragEnd(details);
-            },
-            child: target,
-          );
+            child: child!,
+          ),
+        );
+      },
+      child: system.isDesktop
+          ? Draggable(
+              childWhenDragging: childWhenDragging,
+              data: index,
+              feedback: feedback,
+              onDragStarted: () {
+                _handleDragStarted(index);
+              },
+              onDragUpdate: (details) {
+                _handleDragUpdate(details);
+              },
+              onDragEnd: (details) {
+                _handleDragEnd(details);
+              },
+              child: target,
+            )
+          : LongPressDraggable(
+              childWhenDragging: childWhenDragging,
+              data: index,
+              feedback: feedback,
+              onDragStarted: () {
+                _handleDragStarted(index);
+              },
+              onDragUpdate: (details) {
+                _handleDragUpdate(details);
+              },
+              onDragEnd: (details) {
+                _handleDragEnd(details);
+              },
+              child: target,
+            ),
+    );
   }
 
   Widget _builderItem(int index) {
@@ -395,7 +504,8 @@ class _SuperGridState extends State<SuperGrid>
               return child;
             },
             onWillAcceptWithDetails: (_) {
-              debouncer.call(DebounceTag.handleWill, _handleWill, args: [index]);
+              debouncer
+                  .call(DebounceTag.handleWill, _handleWill, args: [index]);
               return false;
             },
           );
@@ -443,21 +553,132 @@ class _SuperGridState extends State<SuperGrid>
   }
 
   @override
+  void dispose() {
+    super.dispose();
+    _fakeDragWidgetController.dispose();
+    _controller.dispose();
+    _dragIndexNotifier.dispose();
+    _dragIndexNotifier.dispose();
+    _transformTweenListNotifier.dispose();
+    _animating.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DeferredPointerHandler(
+      child: Stack(
+        children: [
+          _ignoreWrap(
+            Grid(
+              axisDirection: AxisDirection.down,
+              crossAxisCount: crossCount,
+              crossAxisSpacing: widget.crossAxisSpacing,
+              mainAxisSpacing: widget.mainAxisSpacing,
+              children: [
+                for (int i = 0; i < children.length; i++) _builderItem(i),
+              ],
+            ),
+          ),
+          _buildFakeTransformWidget(),
+        ],
+      ),
+    );
+  }
+}
+
+class _DeletableContainer extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onDelete;
+
+  const _DeletableContainer({
+    super.key,
+    required this.child,
+    required this.onDelete,
+  });
+
+  @override
+  State<_DeletableContainer> createState() => _DeletableContainerState();
+}
+
+class _DeletableContainerState extends State<_DeletableContainer>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+  bool _deleteButtonVisible = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: commonDuration,
+    );
+    _scaleAnimation = Tween(begin: 1.0, end: 0.4).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeIn,
+      ),
+    );
+    _fadeAnimation = Tween(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: Curves.easeIn,
+      ),
+    );
+  }
+
+  _handleDel() async {
+    setState(() {
+      _deleteButtonVisible = false;
+    });
+    await _controller.forward(from: 0);
+    widget.onDelete();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _controller.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Stack(
+      clipBehavior: Clip.none,
       children: [
-        _ignoreWrap(
-          Grid(
-            axisDirection: AxisDirection.down,
-            crossAxisCount: crossCount,
-            crossAxisSpacing: widget.crossAxisSpacing,
-            mainAxisSpacing: widget.mainAxisSpacing,
-            children: [
-              for (int i = 0; i < children.length; i++) _builderItem(i),
-            ],
-          ),
+        AnimatedBuilder(
+          animation: _controller.view,
+          builder: (_, child) {
+            return Transform.scale(
+              scale: _scaleAnimation.value,
+              child: Opacity(
+                opacity: _fadeAnimation.value,
+                child: child!,
+              ),
+            );
+          },
+          child: widget.child,
         ),
-        _buildFakeTransformWidget(),
+        if (_deleteButtonVisible)
+          Positioned(
+            top: -8,
+            right: -8,
+            child: DeferPointer(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: IconButton.filled(
+                  iconSize: 20,
+                  padding: EdgeInsets.all(2),
+                  onPressed: _handleDel,
+                  icon: Icon(
+                    Icons.close,
+                  ),
+                ),
+              ),
+            ),
+          )
       ],
     );
   }

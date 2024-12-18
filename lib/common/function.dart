@@ -27,16 +27,3 @@ class Debouncer {
 }
 
 final debouncer = Debouncer();
-
-// debounce<F extends Function>(F func, {int milliseconds = 600}) {
-//   Timer? timer;
-//
-//   return ([List<dynamic>? args, Map<Symbol, dynamic>? namedArgs]) {
-//     if (timer != null) {
-//       timer!.cancel();
-//     }
-//     timer = Timer(Duration(milliseconds: milliseconds), () async {
-//       await Function.apply(func, args ?? [], namedArgs);
-//     });
-//   };
-// }
