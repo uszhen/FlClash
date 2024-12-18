@@ -67,6 +67,18 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
 
   int get crossCount => widget.crossAxisCount;
 
+  _initTransformState() {
+    _sizes = _itemContexts.map((item) => item!.size!).toList();
+    _parentOffset =
+        (context.findRenderObject() as RenderBox).localToGlobal(Offset.zero);
+    _offsets = _itemContexts
+        .map((item) =>
+            (item!.findRenderObject() as RenderBox).localToGlobal(Offset.zero) -
+            _parentOffset)
+        .toList();
+    _containerSize = context.size!;
+  }
+
   _initState() {
     _transformTweenListNotifier.value = List.filled(
       length,
@@ -183,18 +195,10 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   _handleDragStarted(int index) {
     _initState();
     _dragIndexNotifier.value = index;
-    _sizes = _itemContexts.map((item) => item!.size!).toList();
+    _initTransformState();
     _dragWidgetSizeNotifier.value = _sizes[index];
-    _parentOffset =
-        (context.findRenderObject() as RenderBox).localToGlobal(Offset.zero);
-    _offsets = _itemContexts
-        .map((item) =>
-            (item!.findRenderObject() as RenderBox).localToGlobal(Offset.zero) -
-            _parentOffset)
-        .toList();
     _targetIndex = index;
     _targetOffset = _offsets[index];
-    _containerSize = context.size!;
     _dragRect = Rect.fromLTWH(
       _targetOffset.dx + _parentOffset.dx,
       _targetOffset.dy + _parentOffset.dy,
@@ -273,6 +277,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
       Offset(_containerSize.width, 0),
     ];
     final List<Offset> nextOffsets = [];
+    print(_sizes);
     for (final index in _indexList) {
       final size = _sizes[index];
       final offset = _getNextOffset(layoutOffsets, size);
@@ -312,17 +317,20 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
       }
       layoutOffsets.removeRange(min(startIndex + 1, endIndex), endIndex);
     }
+    print(nextOffsets);
     _transformTweenListNotifier.value = List.generate(
       _indexList.length,
       (index) {
         final nextIndex = _indexList.indexWhere((i) => i == index);
-        final offset = nextOffsets[nextIndex] - _offsets[index];
+        final offset =
+            nextOffsets[nextIndex != -1 ? nextIndex : index] - _offsets[index];
         return Tween(
           begin: _transformTweenListNotifier.value[index].begin,
           end: offset,
         );
       },
     );
+    print(_transformTweenListNotifier.value.length);
     return nextOffsets;
   }
 
@@ -401,7 +409,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   }
 
   _handleDelete(int index) {
-    children.removeAt(index);
+    _initTransformState();
     _indexList.removeAt(index);
     _transform();
     if (widget.onDelete != null) {
@@ -591,7 +599,6 @@ class _DeletableContainer extends StatefulWidget {
   final VoidCallback onDelete;
 
   const _DeletableContainer({
-    super.key,
     required this.child,
     required this.onDelete,
   });
