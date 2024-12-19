@@ -112,17 +112,6 @@ class _DashboardFragmentState extends State<DashboardFragment> {
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                     children: items,
-                    onReorder: (newIndex, oldIndex) {
-                      setState(() {
-                        final removeAt = items.removeAt(oldIndex);
-                        items.insert(newIndex, removeAt);
-                      });
-                    },
-                    onDelete: (index) {
-                      // setState(() {
-                      //   items.removeAt(index);
-                      // });
-                    },
                   );
                 },
               );
