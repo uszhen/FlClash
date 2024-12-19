@@ -422,7 +422,6 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     _initTransformState();
     final indexWhere = _tempIndexList.indexWhere((i) => i == index);
     _tempIndexList.removeAt(indexWhere);
-    print(_transformTweenMapNotifier.value);
     _transform();
     // final children = List<GridItem>.from(_childrenNotifier.value);
     // children.removeAt(index);
@@ -586,6 +585,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     _dragIndexNotifier.dispose();
     _transformTweenMapNotifier.dispose();
     _animating.dispose();
+    _childrenNotifier.dispose();
   }
 
   @override
