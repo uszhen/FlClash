@@ -33,6 +33,7 @@ class SuperGrid extends StatefulWidget {
 
 class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   final ValueNotifier<List<GridItem>> _childrenNotifier = ValueNotifier([]);
+
   int get length => _childrenNotifier.value.length;
   List<int> _tempIndexList = [];
   List<BuildContext?> _itemContexts = [];
@@ -165,9 +166,12 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
         builder: (_, transformTweenMap, child) {
           final tween = transformTweenMap[index];
           if (tween == null) {
-            return SizedBox(
-              width: _sizes[index].width,
-              height: _sizes[index].height,
+            return Transform.translate(
+              offset: Offset.zero,
+              child: SizedBox(
+                width: _sizes[index].width,
+                height: _sizes[index].height,
+              ),
             );
           }
           return TweenAnimationBuilder<Offset>(
@@ -423,14 +427,16 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     final indexWhere = _tempIndexList.indexWhere((i) => i == index);
     _tempIndexList.removeAt(indexWhere);
     _transform();
-    // final children = List<GridItem>.from(_childrenNotifier.value);
-    // children.removeAt(index);
-    // _childrenNotifier.value = children;
-    // print(children);
-    // _initState();
-    // if (widget.onDelete != null) {
-    //   widget.onDelete!(index);
-    // }
+    Future.delayed(commonDuration, () {
+      _animating.value = true;
+      final children = List<GridItem>.from(_childrenNotifier.value);
+      children.removeAt(index);
+      _childrenNotifier.value = children;
+      _initState();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _animating.value = false;
+      });
+    });
   }
 
   Widget _draggableWrap({
