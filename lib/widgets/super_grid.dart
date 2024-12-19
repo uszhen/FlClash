@@ -77,13 +77,6 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   }
 
   _initState() {
-    _transformTweenMapNotifier.value = List.filled(
-      length,
-      Tween(
-        begin: Offset.zero,
-        end: Offset.zero,
-      ),
-    ).asMap();
     _sizes = List.generate(length, (index) => Size.zero);
     _offsets = [];
     _containerSize = Size.zero;
@@ -428,14 +421,10 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     _tempIndexList.removeAt(indexWhere);
     _transform();
     Future.delayed(commonDuration, () {
-      _animating.value = true;
+      _initState();
       final children = List<GridItem>.from(_childrenNotifier.value);
       children.removeAt(index);
       _childrenNotifier.value = children;
-      _initState();
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _animating.value = false;
-      });
     });
   }
 
@@ -608,6 +597,13 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
                   length,
                   null,
                 );
+                _transformTweenMapNotifier.value = List.filled(
+                  length,
+                  Tween(
+                    begin: Offset.zero,
+                    end: Offset.zero,
+                  ),
+                ).asMap();
                 return Grid(
                   axisDirection: AxisDirection.down,
                   crossAxisCount: crossCount,
