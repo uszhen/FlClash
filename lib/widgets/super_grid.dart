@@ -234,7 +234,9 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
       );
     });
 
-    _targetOffset = nextOffsets[_targetIndex];
+    if(_targetIndex != -1){
+      _targetOffset = nextOffsets[_targetIndex];
+    }
     _transformCompleter = Completer();
     _transformCompleter?.complete(
       _transformController.forward(from: 0),
