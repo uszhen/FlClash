@@ -84,12 +84,14 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     _sizes = List.generate(length, (index) => Size.zero);
     _offsets = [];
     _transformTweenMap.clear();
+    _transformAnimationMap.clear();
     _containerSize = Size.zero;
     _dragIndexNotifier.value = -1;
     _dragWidgetSizeNotifier.value = Size.zero;
     _targetOffset = Offset.zero;
     _parentOffset = Offset.zero;
     _dragRect = Rect.zero;
+    _targetIndex = -1;
   }
 
   @override
@@ -152,59 +154,6 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     super.didUpdateWidget(oldWidget);
   }
 
-  Widget _wrapTransform(Widget rawChild, int index) {
-    return ValueListenableBuilder(
-      valueListenable: _animating,
-      builder: (_, animating, child) {
-        if (animating) {
-          if (_targetIndex == index) {
-            return _sizeBoxWrap(
-              Container(),
-              index,
-            );
-          }
-          return rawChild;
-        }
-        return child!;
-      },
-      child: AnimatedBuilder(
-        builder: (_, child) {
-          return Transform.translate(
-            offset: _transformAnimationMap[index]?.value ?? Offset.zero,
-            child: child!,
-          );
-          // final tween = transformTweenMap[index];
-          // if (tween == null) {
-          //   return Transform.translate(
-          //     offset: Offset.zero,
-          //     child: SizedBox(
-          //       width: _sizes[index].width,
-          //       height: _sizes[index].height,
-          //     ),
-          //   );
-          // }
-          // return TweenAnimationBuilder<Offset>(
-          //   tween: Tween(
-          //     begin: tween.begin,
-          //     end: tween.end,
-          //   ),
-          //   curve: Curves.easeInOut,
-          //   duration: commonDuration,
-          //   builder: (_, offset, child) {
-          //     return Transform.translate(
-          //       offset: offset,
-          //       child: child!,
-          //     );
-          //   },
-          //   child: child!,
-          // );
-        },
-        animation: _transformController.view,
-        child: rawChild,
-      ),
-    );
-  }
-
   _handleDragStarted(int index) {
     _initState();
     _initTransformState();
@@ -224,7 +173,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     debouncer.cancel(DebounceTag.handleWill);
     final isCompleted = _transformController.isCompleted;
     await _transformCompleter?.future;
-    if (_targetIndex == -1 || _targetIndex == _dragIndexNotifier.value) {
+    if (_targetIndex == -1) {
       return;
     }
     _transformTweenMap.clear();
@@ -264,8 +213,6 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     if (dragIndex < 0 || dragIndex > _offsets.length - 1) {
       return;
     }
-    print(index);
-    print(dragIndex);
     final targetIndex = _tempIndexList.indexWhere((i) => i == index);
     if (_targetIndex == targetIndex) {
       return;
@@ -284,6 +231,47 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     final nextOffsets = await _transform(indexList);
     _targetIndex = targetIndex;
     _targetOffset = nextOffsets[_targetIndex];
+  }
+
+  _handleDelete(int index) async {
+    _initTransformState();
+    final indexList = List<int>.from(_tempIndexList);
+    final indexWhere = indexList.indexWhere((i) => i == index);
+    indexList.removeAt(indexWhere);
+    await _transform(indexList);
+    _transformController.value = 0;
+    final children = List<GridItem>.from(_childrenNotifier.value);
+    children.removeAt(index);
+    _childrenNotifier.value = children;
+    _initState();
+  }
+
+  Widget _wrapTransform(Widget rawChild, int index) {
+    return ValueListenableBuilder(
+      valueListenable: _animating,
+      builder: (_, animating, child) {
+        if (animating) {
+          if (_targetIndex == index) {
+            return _sizeBoxWrap(
+              Container(),
+              index,
+            );
+          }
+          return rawChild;
+        }
+        return child!;
+      },
+      child: AnimatedBuilder(
+        builder: (_, child) {
+          return Transform.translate(
+            offset: _transformAnimationMap[index]?.value ?? Offset.zero,
+            child: child!,
+          );
+        },
+        animation: _transformController.view,
+        child: rawChild,
+      ),
+    );
   }
 
   Future<List<Offset>> _transform(List<int> indexList) async {
@@ -443,20 +431,6 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
       },
       child: child,
     );
-  }
-
-  _handleDelete(int index) {
-    _initTransformState();
-    final indexList = List<int>.from(_tempIndexList);
-    final indexWhere = indexList.indexWhere((i) => i == index);
-    indexList.removeAt(indexWhere);
-    _transform(indexList);
-    Future.delayed(commonDuration, () {
-      _initState();
-      final children = List<GridItem>.from(_childrenNotifier.value);
-      children.removeAt(index);
-      _childrenNotifier.value = children;
-    });
   }
 
   Widget _draggableWrap({
@@ -688,6 +662,17 @@ class _DeletableContainerState extends State<_DeletableContainer>
         curve: Curves.easeIn,
       ),
     );
+  }
+
+
+  @override
+  void didUpdateWidget(_DeletableContainer oldWidget) {
+    if(oldWidget.child != widget.child){
+      setState(() {
+        _controller.value = 0;
+        _deleteButtonVisible = true;
+      });
+    }
   }
 
   _handleDel() async {
