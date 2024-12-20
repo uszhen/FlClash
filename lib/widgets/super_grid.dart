@@ -442,10 +442,25 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     required Widget target,
     required int index,
   }) {
-    final uniqueKey = UniqueKey();
-    final draggableTarget = system.isDesktop
+    final shakeTarget = ValueListenableBuilder(
+      valueListenable: _dragIndexNotifier,
+      builder: (_, dragIndex, child) {
+        if (dragIndex == index) {
+          return child!;
+        }
+        return _shakeWrap(
+          _DeletableContainer(
+            onDelete: () {
+              _handleDelete(index);
+            },
+            child: child!,
+          ),
+        );
+      },
+      child: target,
+    );
+    final draggableChild = system.isDesktop
         ? Draggable(
-            key: uniqueKey,
             childWhenDragging: childWhenDragging,
             data: index,
             feedback: feedback,
@@ -458,10 +473,9 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
             onDragEnd: (details) {
               _handleDragEnd(details);
             },
-            child: target,
+            child: shakeTarget,
           )
         : LongPressDraggable(
-            key: uniqueKey,
             childWhenDragging: childWhenDragging,
             data: index,
             feedback: feedback,
@@ -474,7 +488,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
             onDragEnd: (details) {
               _handleDragEnd(details);
             },
-            child: target,
+            child: shakeTarget,
           );
     return ValueListenableBuilder(
       valueListenable: isEditNotifier,
@@ -482,57 +496,9 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
         if (!isEdit) {
           return target;
         }
-        return ValueListenableBuilder(
-          valueListenable: _dragIndexNotifier,
-          builder: (_, dragIndex, child) {
-            // if (dragIndex == index) {
-            //   return child!;
-            // }
-            return _shakeWrap(
-              _DeletableContainer(
-                onDelete: () {
-                  _handleDelete(index);
-                },
-                child: child!,
-              ),
-            );
-          },
-          child: child!,
-        );
+        return child!;
       },
-      child: system.isDesktop
-          ? Draggable(
-              key: uniqueKey,
-              childWhenDragging: childWhenDragging,
-              data: index,
-              feedback: feedback,
-              onDragStarted: () {
-                _handleDragStarted(index);
-              },
-              onDragUpdate: (details) {
-                _handleDragUpdate(details);
-              },
-              onDragEnd: (details) {
-                _handleDragEnd(details);
-              },
-              child: target,
-            )
-          : LongPressDraggable(
-              key: uniqueKey,
-              childWhenDragging: childWhenDragging,
-              data: index,
-              feedback: feedback,
-              onDragStarted: () {
-                _handleDragStarted(index);
-              },
-              onDragUpdate: (details) {
-                _handleDragUpdate(details);
-              },
-              onDragEnd: (details) {
-                _handleDragEnd(details);
-              },
-              child: target,
-            ),
+      child: draggableChild,
     );
   }
 
