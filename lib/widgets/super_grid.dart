@@ -241,6 +241,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     _transformCompleter?.complete(
       _transformController.forward(from: 0),
     );
+    return _transformCompleter?.future;
   }
 
   _handleDragStarted(int index) {
