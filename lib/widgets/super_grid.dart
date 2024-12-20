@@ -667,6 +667,7 @@ class _DeletableContainerState extends State<_DeletableContainer>
 
   @override
   void didUpdateWidget(_DeletableContainer oldWidget) {
+    super.didUpdateWidget(oldWidget);
     if(oldWidget.child != widget.child){
       setState(() {
         _controller.value = 0;
