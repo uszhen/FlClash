@@ -63,14 +63,18 @@ class ApplicationState extends State<Application> {
 
   final _pageTransitionsTheme = const PageTransitionsTheme(
     builders: <TargetPlatform, PageTransitionsBuilder>{
-      TargetPlatform.android: PredictiveBackPageTransitionsBuilder(),
+      TargetPlatform.android: SharedAxisPageTransitionsBuilder(
+        transitionType: SharedAxisTransitionType.horizontal,
+      ),
       TargetPlatform.windows: SharedAxisPageTransitionsBuilder(
         transitionType: SharedAxisTransitionType.horizontal,
       ),
       TargetPlatform.linux: SharedAxisPageTransitionsBuilder(
         transitionType: SharedAxisTransitionType.horizontal,
       ),
-      TargetPlatform.macOS: ZoomPageTransitionsBuilder(),
+      TargetPlatform.macOS: SharedAxisPageTransitionsBuilder(
+        transitionType: SharedAxisTransitionType.horizontal,
+      ),
     },
   );
 
