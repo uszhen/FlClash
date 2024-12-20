@@ -155,8 +155,8 @@ class _ScanPageState extends State<ScanPage> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_subscription?.cancel());
     _subscription = null;
-    super.dispose();
     await controller.dispose();
+    super.dispose();
   }
 }
 

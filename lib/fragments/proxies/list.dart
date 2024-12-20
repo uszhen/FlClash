@@ -65,10 +65,10 @@ class _ProxiesListFragmentState extends State<ProxiesListFragment> {
 
   @override
   void dispose() {
-    super.dispose();
     _headerStateNotifier.dispose();
     _controller.removeListener(_adjustHeader);
     _controller.dispose();
+    super.dispose();
   }
 
   _handleChange(Set<String> currentUnfoldSet, String groupName) {

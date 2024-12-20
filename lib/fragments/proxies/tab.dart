@@ -30,8 +30,8 @@ class ProxiesTabFragmentState extends State<ProxiesTabFragment>
 
   @override
   void dispose() {
-    super.dispose();
     _destroyTabController();
+    super.dispose();
   }
 
   scrollToGroupSelected() {
@@ -282,8 +282,8 @@ class ProxyGroupViewState extends State<ProxyGroupView> {
 
   @override
   void dispose() {
-    super.dispose();
     _controller.dispose();
+    super.dispose();
   }
 
   scrollToSelected() {

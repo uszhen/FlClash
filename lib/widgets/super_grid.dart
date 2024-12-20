@@ -234,7 +234,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
       );
     });
 
-    if(_targetIndex != -1){
+    if (_targetIndex != -1) {
       _targetOffset = nextOffsets[_targetIndex];
     }
     _transformCompleter = Completer();
@@ -598,15 +598,16 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
 
   @override
   void dispose() {
-    super.dispose();
+    _scrollable = null;
     _fakeDragWidgetController.dispose();
     _shakeController.dispose();
-    _dragIndexNotifier.dispose();
+    _transformController.dispose();
     _dragIndexNotifier.dispose();
     _animating.dispose();
     _childrenNotifier.dispose();
     isEditNotifier.removeListener(_handleIsEditChange);
     isEditNotifier.dispose();
+    super.dispose();
   }
 
   @override
@@ -700,8 +701,8 @@ class _DeletableContainerState extends State<_DeletableContainer>
 
   @override
   void dispose() {
-    super.dispose();
     _controller.dispose();
+    super.dispose();
   }
 
   @override

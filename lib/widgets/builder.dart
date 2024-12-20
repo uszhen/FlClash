@@ -19,8 +19,8 @@ class _ScrollOverBuilderState extends State<ScrollOverBuilder> {
 
   @override
   void dispose() {
-    super.dispose();
     isOverNotifier.dispose();
+    super.dispose();
   }
 
   @override

@@ -175,9 +175,9 @@ class _WindowHeaderState extends State<WindowHeader> {
 
   @override
   void dispose() {
-    super.dispose();
     isMaximizedNotifier.dispose();
     isPinNotifier.dispose();
+    super.dispose();
   }
 
   _updateMaximized() {

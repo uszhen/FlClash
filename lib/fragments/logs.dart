@@ -49,11 +49,11 @@ class _LogsFragmentState extends State<LogsFragment> {
 
   @override
   void dispose() {
-    super.dispose();
     timer?.cancel();
     logsNotifier.dispose();
     scrollController.dispose();
     timer = null;
+    super.dispose();
   }
 
   _handleExport() async {
@@ -235,8 +235,8 @@ class LogsSearchDelegate extends SearchDelegate {
 
   @override
   void dispose() {
-    super.dispose();
     logsNotifier.dispose();
+    super.dispose();
   }
 
   get state => logsNotifier.value;

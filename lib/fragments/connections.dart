@@ -112,11 +112,11 @@ class _ConnectionsFragmentState extends State<ConnectionsFragment> {
 
   @override
   void dispose() {
-    super.dispose();
     timer?.cancel();
     connectionsNotifier.dispose();
     _scrollController.dispose();
     timer = null;
+    super.dispose();
   }
 
   @override

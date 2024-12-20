@@ -32,8 +32,8 @@ class _ConnectivityManagerState extends State<ConnectivityManager> {
 
   @override
   void dispose() {
-    super.dispose();
     subscription.cancel();
+    super.dispose();
   }
 
   @override
