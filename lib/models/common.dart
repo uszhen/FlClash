@@ -343,7 +343,7 @@ class SystemColorSchemes {
             );
     }
     return lightColorScheme != null
-        ? ColorScheme.fromSeed(seedColor: darkColorScheme!.primary)
+        ? ColorScheme.fromSeed(seedColor: lightColorScheme!.primary)
         : ColorScheme.fromSeed(seedColor: defaultPrimaryColor);
   }
 }
