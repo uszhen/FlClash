@@ -24,6 +24,10 @@ class Debouncer {
       },
     );
   }
+
+  cancel(dynamic tag) {
+    operators[tag]?.cancel();
+  }
 }
 
 final debouncer = Debouncer();

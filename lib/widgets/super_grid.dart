@@ -46,19 +46,23 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   EdgeDraggingAutoScroller? _edgeDraggingAutoScroller;
   final ValueNotifier<bool> isEditNotifier = ValueNotifier(false);
 
-  final ValueNotifier<Map<int, Tween<Offset>>> _transformTweenMapNotifier =
-      ValueNotifier({});
+  Map<int, Tween<Offset>> _transformTweenMap = {};
 
   final ValueNotifier<bool> _animating = ValueNotifier(false);
 
   final _dragWidgetSizeNotifier = ValueNotifier(Size.zero);
   final _dragIndexNotifier = ValueNotifier(-1);
 
+  late AnimationController _transformController;
+  Completer? _transformCompleter;
+
+  Map<int, Animation<Offset>> _transformAnimationMap = {};
+
   late AnimationController _fakeDragWidgetController;
   Animation<Offset>? _fakeDragWidgetAnimation;
 
-  late AnimationController _controller;
-  late Animation<double> _animation;
+  late AnimationController _shakeController;
+  late Animation<double> _shakeAnimation;
   Rect _dragRect = Rect.zero;
   Scrollable? _scrollable;
 
@@ -79,6 +83,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   _initState() {
     _sizes = List.generate(length, (index) => Size.zero);
     _offsets = [];
+    _transformTweenMap.clear();
     _containerSize = Size.zero;
     _dragIndexNotifier.value = -1;
     _dragWidgetSizeNotifier.value = Size.zero;
@@ -92,23 +97,31 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     super.initState();
     isEditNotifier.value = widget.isEdit;
     _childrenNotifier.value = widget.children;
+
     _fakeDragWidgetController = AnimationController.unbounded(
       vsync: this,
       duration: commonDuration,
     );
-    _controller = AnimationController(
+
+    _shakeController = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 120),
-    )..repeat(reverse: true);
-    _animation = Tween<double>(
+    );
+    _shakeAnimation = Tween<double>(
       begin: -0.012,
       end: 0.018,
     ).animate(
       CurvedAnimation(
-        parent: _controller,
+        parent: _shakeController,
         curve: Curves.easeInOut,
       ),
     );
+
+    _transformController = AnimationController(
+      vsync: this,
+      duration: commonDuration,
+    );
+
     _initState();
   }
 
@@ -154,35 +167,39 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
         }
         return child!;
       },
-      child: ValueListenableBuilder(
-        valueListenable: _transformTweenMapNotifier,
-        builder: (_, transformTweenMap, child) {
-          final tween = transformTweenMap[index];
-          if (tween == null) {
-            return Transform.translate(
-              offset: Offset.zero,
-              child: SizedBox(
-                width: _sizes[index].width,
-                height: _sizes[index].height,
-              ),
-            );
-          }
-          return TweenAnimationBuilder<Offset>(
-            tween: Tween(
-              begin: tween.begin,
-              end: tween.end,
-            ),
-            curve: Curves.easeInOut,
-            duration: commonDuration,
-            builder: (_, offset, child) {
-              return Transform.translate(
-                offset: offset,
-                child: child!,
-              );
-            },
+      child: AnimatedBuilder(
+        builder: (_, child) {
+          return Transform.translate(
+            offset: _transformAnimationMap[index]?.value ?? Offset.zero,
             child: child!,
           );
+          // final tween = transformTweenMap[index];
+          // if (tween == null) {
+          //   return Transform.translate(
+          //     offset: Offset.zero,
+          //     child: SizedBox(
+          //       width: _sizes[index].width,
+          //       height: _sizes[index].height,
+          //     ),
+          //   );
+          // }
+          // return TweenAnimationBuilder<Offset>(
+          //   tween: Tween(
+          //     begin: tween.begin,
+          //     end: tween.end,
+          //   ),
+          //   curve: Curves.easeInOut,
+          //   duration: commonDuration,
+          //   builder: (_, offset, child) {
+          //     return Transform.translate(
+          //       offset: offset,
+          //       child: child!,
+          //     );
+          //   },
+          //   child: child!,
+          // );
         },
+        animation: _transformController.view,
         child: rawChild,
       ),
     );
@@ -204,33 +221,33 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   }
 
   _handleDragEnd(DraggableDetails details) async {
-    if (_targetIndex == -1) {
+    debouncer.cancel(DebounceTag.handleWill);
+    final isCompleted = _transformController.isCompleted;
+    await _transformCompleter?.future;
+    if (_targetIndex == -1 || _targetIndex == _dragIndexNotifier.value) {
       return;
     }
+    _transformTweenMap.clear();
+    _transformAnimationMap.clear();
     final children = List<GridItem>.from(_childrenNotifier.value);
     children.insert(_targetIndex, children.removeAt(_dragIndexNotifier.value));
     _childrenNotifier.value = children;
-    _transformTweenMapNotifier.value = List.filled(
-      length,
-      Tween(
-        begin: Offset.zero,
-        end: Offset.zero,
-      ),
-    ).asMap();
-    const spring = SpringDescription(
-      mass: 1,
-      stiffness: 100,
-      damping: 10,
-    );
-    final simulation = SpringSimulation(spring, 0, 1, 0);
-    _fakeDragWidgetAnimation = Tween(
-      begin: details.offset - _parentOffset,
-      end: _targetOffset,
-    ).animate(_fakeDragWidgetController);
-    _animating.value = true;
-    await _fakeDragWidgetController.animateWith(simulation);
-    _animating.value = false;
-    _fakeDragWidgetAnimation = null;
+    if(isCompleted){
+      const spring = SpringDescription(
+        mass: 1,
+        stiffness: 100,
+        damping: 10,
+      );
+      final simulation = SpringSimulation(spring, 0, 1, 0);
+      _fakeDragWidgetAnimation = Tween(
+        begin: details.offset - _parentOffset,
+        end: _targetOffset,
+      ).animate(_fakeDragWidgetController);
+      _animating.value = true;
+      await _fakeDragWidgetController.animateWith(simulation);
+      _animating.value = false;
+      _fakeDragWidgetAnimation = null;
+    }
     _initState();
   }
 
@@ -247,11 +264,13 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
     if (dragIndex < 0 || dragIndex > _offsets.length - 1) {
       return;
     }
+    print(index);
+    print(dragIndex);
     final targetIndex = _tempIndexList.indexWhere((i) => i == index);
     if (_targetIndex == targetIndex) {
       return;
     }
-    _tempIndexList = List.generate(length, (i) {
+    final indexList = List.generate(length, (i) {
       if (i == targetIndex) return _dragIndexNotifier.value;
       if (_targetIndex > targetIndex && i > targetIndex && i <= _targetIndex) {
         return _tempIndexList[i - 1];
@@ -262,17 +281,18 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
       }
       return _tempIndexList[i];
     }).toList();
+    final nextOffsets = await _transform(indexList);
     _targetIndex = targetIndex;
-    final nextOffsets = _transform();
     _targetOffset = nextOffsets[_targetIndex];
   }
 
-  List<Offset> _transform() {
+  Future<List<Offset>> _transform(List<int> indexList) async {
     List<Offset> layoutOffsets = [
       Offset(_containerSize.width, 0),
     ];
     final List<Offset> nextOffsets = [];
-    for (final index in _tempIndexList) {
+
+    for (final index in indexList) {
       final size = _sizes[index];
       final offset = _getNextOffset(layoutOffsets, size);
       final layoutOffset = Offset(
@@ -314,29 +334,37 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
 
     final Map<int, Tween<Offset>> transformTweenMap = {};
 
-    for (final index in _tempIndexList) {
-      final nextIndex = _tempIndexList.indexWhere((i) => i == index);
+    for (final index in indexList) {
+      final nextIndex = indexList.indexWhere((i) => i == index);
       transformTweenMap[index] = Tween(
-        begin: _transformTweenMapNotifier.value[index]!.begin,
+        begin: _transformTweenMap[index]?.begin ?? Offset.zero,
         end: nextOffsets[nextIndex] - _offsets[index],
       );
     }
 
-    _transformTweenMapNotifier.value = transformTweenMap;
+    _transformTweenMap = transformTweenMap;
 
-    // final List<Tween<Offset>> transformTweenList = [];
-    // for (int index = 0; index < _offsets.length; index++) {
-    //   final nextIndex = _tempIndexList.indexWhere((i) => i == index);
-    //   if (nextIndex == -1) {
-    //     continue;
-    //   }
-    //   transformTweenList.add(Tween(
-    //     begin: _transformTweenListNotifier.value[index].begin,
-    //     end: nextOffsets[nextIndex] - _offsets[index],
-    //   ));
-    // }
-    //
-    // _transformTweenListNotifier.value = transformTweenList;
+    _transformAnimationMap = transformTweenMap.map((key, value) {
+      final preAnimationValue = _transformAnimationMap[key]?.value;
+      return MapEntry(
+        key,
+        Tween(
+          begin: preAnimationValue ?? Offset.zero,
+          end: value.end,
+        ).animate(_transformController),
+      );
+    });
+
+    final tickerFuture = _transformController.forward(from: 0);
+
+    _transformCompleter = Completer();
+    var stopwatch = Stopwatch()..start();
+    _transformCompleter?.complete(tickerFuture);
+
+    await _transformCompleter?.future;
+    stopwatch.stop();
+
+    _tempIndexList = indexList;
 
     return nextOffsets;
   }
@@ -403,11 +431,13 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
 
   Widget _shakeWrap(Widget child) {
     final random = 0.7 + Random().nextDouble() * 0.3;
+    _shakeController.stop();
+    _shakeController.repeat(reverse: true);
     return AnimatedBuilder(
-      animation: _animation,
+      animation: _shakeAnimation,
       builder: (_, child) {
         return Transform.rotate(
-          angle: _animation.value * random,
+          angle: _shakeAnimation.value * random,
           child: child!,
         );
       },
@@ -417,9 +447,10 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
 
   _handleDelete(int index) {
     _initTransformState();
-    final indexWhere = _tempIndexList.indexWhere((i) => i == index);
-    _tempIndexList.removeAt(indexWhere);
-    _transform();
+    final indexList = List<int>.from(_tempIndexList);
+    final indexWhere = indexList.indexWhere((i) => i == index);
+    indexList.removeAt(indexWhere);
+    _transform(indexList);
     Future.delayed(commonDuration, () {
       _initState();
       final children = List<GridItem>.from(_childrenNotifier.value);
@@ -523,8 +554,11 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
               return child;
             },
             onWillAcceptWithDetails: (_) {
-              debouncer
-                  .call(DebounceTag.handleWill, _handleWill, args: [index]);
+              debouncer.call(
+                DebounceTag.handleWill,
+                _handleWill,
+                args: [index],
+              );
               return false;
             },
           );
@@ -575,10 +609,9 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
   void dispose() {
     super.dispose();
     _fakeDragWidgetController.dispose();
-    _controller.dispose();
+    _shakeController.dispose();
     _dragIndexNotifier.dispose();
     _dragIndexNotifier.dispose();
-    _transformTweenMapNotifier.dispose();
     _animating.dispose();
     _childrenNotifier.dispose();
   }
@@ -597,13 +630,6 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
                   length,
                   null,
                 );
-                _transformTweenMapNotifier.value = List.filled(
-                  length,
-                  Tween(
-                    begin: Offset.zero,
-                    end: Offset.zero,
-                  ),
-                ).asMap();
                 return Grid(
                   axisDirection: AxisDirection.down,
                   crossAxisCount: crossCount,
