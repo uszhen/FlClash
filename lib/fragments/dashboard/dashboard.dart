@@ -22,7 +22,7 @@ class DashboardFragment extends StatefulWidget {
 }
 
 class _DashboardFragmentState extends State<DashboardFragment> {
-  ValueNotifier<bool> isEditNotifier = ValueNotifier(false);
+  final key = GlobalKey<SuperGridState>();
 
   final items = [
     GridItem(
@@ -68,7 +68,7 @@ class _DashboardFragmentState extends State<DashboardFragment> {
       commonScaffoldState?.actions = [
         IconButton(
           icon: ValueListenableBuilder(
-            valueListenable: isEditNotifier,
+            valueListenable: key.currentState!.isEditNotifier,
             builder: (_, isEdit, ___) {
               return isEdit
                   ? Icon(Icons.save)
@@ -78,7 +78,8 @@ class _DashboardFragmentState extends State<DashboardFragment> {
             },
           ),
           onPressed: () {
-            isEditNotifier.value = !isEditNotifier.value;
+            key.currentState!.isEditNotifier.value =
+                !key.currentState!.isEditNotifier.value;
           },
         ),
       ];
@@ -99,20 +100,18 @@ class _DashboardFragmentState extends State<DashboardFragment> {
           padding: const EdgeInsets.all(16).copyWith(
             bottom: 88,
           ),
-          child: ValueListenableBuilder(
-            valueListenable: isEditNotifier,
-            builder: (_, isEdit, ___) {
-              return Selector<AppState, double>(
-                selector: (_, appState) => appState.viewWidth,
-                builder: (_, viewWidth, ___) {
-                  final columns = max(4 * ((viewWidth / 350).ceil()), 8);
-                  return SuperGrid(
-                    isEdit: isEdit,
-                    crossAxisCount: columns,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    children: items,
-                  );
+          child: Selector<AppState, double>(
+            selector: (_, appState) => appState.viewWidth,
+            builder: (_, viewWidth, ___) {
+              final columns = max(4 * ((viewWidth / 350).ceil()), 8);
+              return SuperGrid(
+                key: key,
+                crossAxisCount: columns,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                children: items,
+                onSave: (_){
+
                 },
               );
             },
