@@ -1,6 +1,9 @@
+import 'dart:math';
+
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import 'text.dart';
 
@@ -168,6 +171,7 @@ class CommonCard extends StatelessWidget {
         ],
       );
     }
+
     if (selectWidget != null && isSelected) {
       final List<Widget> children = [];
       children.add(childWidget);
@@ -180,24 +184,29 @@ class CommonCard extends StatelessWidget {
         children: children,
       );
     }
-    return OutlinedButton(
-      clipBehavior: Clip.antiAlias,
-      style: ButtonStyle(
-        padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-        shape: WidgetStatePropertyAll(
-          RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(radius),
+
+    return LayoutBuilder(
+      builder: (_, container) {
+        return OutlinedButton(
+          clipBehavior: Clip.antiAlias,
+          style: ButtonStyle(
+            padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(radius),
+              ),
+            ),
+            backgroundColor: WidgetStateProperty.resolveWith(
+              (states) => getBackgroundColor(context, states),
+            ),
+            side: WidgetStateProperty.resolveWith(
+              (states) => getBorderSide(context, states),
+            ),
           ),
-        ),
-        backgroundColor: WidgetStateProperty.resolveWith(
-          (states) => getBackgroundColor(context, states),
-        ),
-        side: WidgetStateProperty.resolveWith(
-          (states) => getBorderSide(context, states),
-        ),
-      ),
-      onPressed: onPressed,
-      child: childWidget,
+          onPressed: onPressed,
+          child: childWidget,
+        );
+      },
     );
   }
 }

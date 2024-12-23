@@ -61,49 +61,42 @@ class _NetworkSpeedState extends State<NetworkSpeed> {
     );
     final size = globalState.measure.computeTextSize(valueText);
 
-    return Column(
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
       mainAxisSize: MainAxisSize.max,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.max,
-          children: [
-            Flexible(
-              child: Icon(iconData),
-            ),
-            Flexible(
-              child: Text(
-                label,
-                style: Theme.of(context).textTheme.titleSmall?.toSoftBold,
-              ),
-            ),
-          ],
+        Flexible(
+          flex: 0,
+          child: Icon(
+            iconData,
+          ),
         ),
         SizedBox(
-            width: size.width,
-            height: size.height,
-            child: OverflowBox(
-              maxWidth: 156,
-              alignment: Alignment.centerLeft,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Flexible(
-                    child: valueText,
-                  ),
-                  const Flexible(
-                    flex: 0,
-                    child: SizedBox(
-                      width: 4,
-                    ),
-                  ),
-                  Flexible(
-                    child: unitText,
-                  ),
-                ],
-              ),
-            ))
+          width: 8,
+        ),
+        SizedBox(
+          width: size.width,
+          height: size.height,
+          child: OverflowBox(
+            maxWidth: 156,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Flexible(
+                  child: valueText,
+                ),
+                SizedBox(
+                  width: 4,
+                ),
+                Flexible(
+                  child: unitText,
+                ),
+              ],
+            ),
+          ),
+        )
       ],
     );
   }
@@ -133,7 +126,9 @@ class _NetworkSpeedState extends State<NetworkSpeed> {
                     height: 100,
                   ),
                 ),
-                const Flexible(child: SizedBox(height: 16)),
+                SizedBox(
+                  height: 24,
+                ),
                 Flexible(
                   flex: 0,
                   child: Row(

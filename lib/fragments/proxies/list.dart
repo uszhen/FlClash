@@ -471,7 +471,7 @@ class _ListHeaderState extends State<ListHeader>
   Widget build(BuildContext context) {
     return CommonCard(
       key: widget.key,
-      radius: 18,
+      radius: 16,
       type: CommonCardType.filled,
       child: Container(
         padding: const EdgeInsets.symmetric(
