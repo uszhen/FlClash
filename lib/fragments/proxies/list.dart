@@ -445,7 +445,7 @@ class _ListHeaderState extends State<ListHeader>
                     borderRadius: BorderRadius.circular(16),
                   ),
                   clipBehavior: Clip.antiAlias,
-                  child: CommonIcon(
+                  child: CommonTargetIcon(
                     src: icon,
                     size: 32,
                   ),
@@ -454,7 +454,7 @@ class _ListHeaderState extends State<ListHeader>
                   margin: const EdgeInsets.only(
                     right: 16,
                   ),
-                  child: CommonIcon(
+                  child: CommonTargetIcon(
                     src: icon,
                     size: 42,
                   ),
@@ -555,7 +555,7 @@ class _ListHeaderState extends State<ListHeader>
                     onPressed: () {
                       widget.onScrollToSelected(groupName);
                     },
-                    icon: const Icon(
+                    icon: const CommonIcon(
                       Icons.adjust,
                     ),
                   ),
@@ -563,7 +563,7 @@ class _ListHeaderState extends State<ListHeader>
                     onPressed: () {
                       _delayTest(widget.group.all);
                     },
-                    icon: const Icon(
+                    icon: const CommonIcon(
                       Icons.network_ping,
                     ),
                   ),
@@ -580,7 +580,7 @@ class _ListHeaderState extends State<ListHeader>
                       },
                       icon: RotationTransition(
                         turns: _iconTurns,
-                        child: const Icon(
+                        child: const CommonIcon(
                           Icons.expand_more,
                         ),
                       ),

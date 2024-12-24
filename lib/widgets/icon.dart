@@ -2,11 +2,11 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:flutter/material.dart';
 
-class CommonIcon extends StatelessWidget {
+class CommonTargetIcon extends StatelessWidget {
   final String src;
   final double size;
 
-  const CommonIcon({
+  const CommonTargetIcon({
     super.key,
     required this.src,
     required this.size,
@@ -47,6 +47,28 @@ class CommonIcon extends StatelessWidget {
       width: size,
       height: size,
       child: _buildIcon(),
+    );
+  }
+}
+
+class CommonIcon extends StatelessWidget {
+  final IconData? iconData;
+  final double size;
+  final Color? color;
+
+  const CommonIcon(
+    this.iconData, {
+    super.key,
+    this.size = 22,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Icon(
+      iconData,
+      size: size,
+      color: color,
     );
   }
 }

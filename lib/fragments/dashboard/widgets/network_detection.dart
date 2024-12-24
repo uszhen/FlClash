@@ -125,7 +125,7 @@ class _NetworkDetectionState extends State<NetworkDetection> {
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Icon(
+                        CommonIcon(
                           Icons.network_check,
                           color: Theme.of(context).colorScheme.primary,
                         ),

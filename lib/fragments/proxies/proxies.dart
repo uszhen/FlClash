@@ -85,7 +85,7 @@ class _ProxiesFragmentState extends State<ProxiesFragment> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         clipBehavior: Clip.antiAlias,
-                        child: CommonIcon(
+                        child: CommonTargetIcon(
                           src: item.value,
                           size: 42,
                         ),

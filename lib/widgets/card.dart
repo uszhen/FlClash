@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 
+import 'icon.dart';
 import 'text.dart';
 
 class Info {
@@ -41,7 +41,7 @@ class InfoHeader extends StatelessWidget {
               mainAxisSize: MainAxisSize.max,
               children: [
                 if (info.iconData != null) ...[
-                  Icon(
+                  CommonIcon(
                     info.iconData,
                     color: Theme.of(context).colorScheme.primary,
                   ),
@@ -185,28 +185,29 @@ class CommonCard extends StatelessWidget {
       );
     }
 
-    return LayoutBuilder(
-      builder: (_, container) {
-        return OutlinedButton(
-          clipBehavior: Clip.antiAlias,
-          style: ButtonStyle(
-            padding: const WidgetStatePropertyAll(EdgeInsets.zero),
-            shape: WidgetStatePropertyAll(
-              RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(radius),
-              ),
-            ),
-            backgroundColor: WidgetStateProperty.resolveWith(
-              (states) => getBackgroundColor(context, states),
-            ),
-            side: WidgetStateProperty.resolveWith(
-              (states) => getBorderSide(context, states),
+    return IconTheme(
+      data: IconThemeData(
+        size: 24,
+      ),
+      child: OutlinedButton(
+        clipBehavior: Clip.antiAlias,
+        style: ButtonStyle(
+          padding: const WidgetStatePropertyAll(EdgeInsets.zero),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(radius),
             ),
           ),
-          onPressed: onPressed,
-          child: childWidget,
-        );
-      },
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) => getBackgroundColor(context, states),
+          ),
+          side: WidgetStateProperty.resolveWith(
+            (states) => getBorderSide(context, states),
+          ),
+        ),
+        onPressed: onPressed,
+        child: childWidget,
+      ),
     );
   }
 }
