@@ -1,3 +1,4 @@
+import 'package:fl_clash/widgets/icon.dart';
 import 'package:flutter/material.dart';
 
 class CommonPopupMenuItem<T> {
@@ -82,7 +83,7 @@ class _CommonPopupMenuState<T> extends State<CommonPopupMenu<T>> {
                             ? Flexible(
                                 child: Container(
                                   margin: const EdgeInsets.only(right: 16),
-                                  child: Icon(item.iconData),
+                                  child: CommonIcon(item.iconData),
                                 ),
                               )
                             : Container(),
