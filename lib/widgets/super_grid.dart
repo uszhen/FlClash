@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:defer_pointer/defer_pointer.dart';
 import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
+import 'package:fl_clash/fragments/dashboard/widgets/network_speed.dart';
 import 'package:fl_clash/widgets/card.dart';
 import 'package:fl_clash/widgets/grid.dart';
 import 'package:flutter/material.dart';
@@ -180,7 +181,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
           _containerSize.width,
         ),
         min(
-          offset.dy + size.height + widget.crossAxisSpacing,
+          offset.dy + size.height + widget.mainAxisSpacing,
           _containerSize.height,
         ),
       );
@@ -223,16 +224,18 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
 
     _transformTweenMap = transformTweenMap;
 
-    _transformAnimationMap = transformTweenMap.map((key, value) {
-      final preAnimationValue = _transformAnimationMap[key]?.value;
-      return MapEntry(
-        key,
-        Tween(
-          begin: preAnimationValue ?? Offset.zero,
-          end: value.end,
-        ).animate(_transformController),
-      );
-    });
+    _transformAnimationMap = transformTweenMap.map(
+      (key, value) {
+        final preAnimationValue = _transformAnimationMap[key]?.value;
+        return MapEntry(
+          key,
+          Tween(
+            begin: preAnimationValue ?? Offset.zero,
+            end: value.end,
+          ).animate(_transformController),
+        );
+      },
+    );
 
     if (_targetIndex != -1) {
       _targetOffset = nextOffsets[_targetIndex];
@@ -381,7 +384,7 @@ class SuperGridState extends State<SuperGrid> with TickerProviderStateMixin {
         final tempOffset = offsets[j];
         if (offset.dy.moreOrEqual(tempOffset.dy)) {
           span = tempOffset.dx - offsetX;
-          if (span >= size.width) {
+          if (span.moreOrEqual(size.width)) {
             nextOffset = Offset(offsetX, offset.dy);
           }
         } else {
