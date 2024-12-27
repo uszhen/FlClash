@@ -1,6 +1,9 @@
 // ignore_for_file: constant_identifier_names
 
+import 'package:fl_clash/fragments/dashboard/widgets/widgets.dart';
+import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
@@ -231,4 +234,53 @@ enum DebounceTag {
   updateDelay,
   vpnTip,
   autoLaunch
+}
+
+enum DashboardWidget {
+  networkSpeed(
+    GridItem(
+      crossAxisCellCount: 8,
+      child: NetworkSpeed(),
+    ),
+  ),
+  outboundMode(
+    GridItem(
+      crossAxisCellCount: 4,
+      child: OutboundMode(),
+    ),
+  ),
+  trafficUsage(
+    GridItem(
+      crossAxisCellCount: 4,
+      child: TrafficUsage(),
+    ),
+  ),
+  networkDetection(
+    GridItem(
+      crossAxisCellCount: 4,
+      child: NetworkDetection(),
+    ),
+  ),
+  tunButton(
+    GridItem(
+      crossAxisCellCount: 4,
+      child: TUNButton(),
+    ),
+  ),
+  systemProxyButton(
+    GridItem(
+      crossAxisCellCount: 4,
+      child: SystemProxyButton(),
+    ),
+  ),
+  intranetIp(
+    GridItem(
+      crossAxisCellCount: 4,
+      child: IntranetIP(),
+    ),
+  );
+
+  final Widget widget;
+
+  const DashboardWidget(this.widget);
 }
