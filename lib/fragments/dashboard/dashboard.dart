@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:fl_clash/common/common.dart';
+import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/fragments/dashboard/widgets/status_button.dart';
 import 'package:fl_clash/models/models.dart';
 import 'package:fl_clash/widgets/widgets.dart';
@@ -23,39 +24,6 @@ class DashboardFragment extends StatefulWidget {
 
 class _DashboardFragmentState extends State<DashboardFragment> {
   final key = GlobalKey<SuperGridState>();
-
-  final items = [
-    GridItem(
-      crossAxisCellCount: 8,
-      child: NetworkSpeed(),
-    ),
-    if (system.isDesktop) ...[
-      GridItem(
-        crossAxisCellCount: 4,
-        child: TUNButton(),
-      ),
-      GridItem(
-        crossAxisCellCount: 4,
-        child: SystemProxyButton(),
-      ),
-    ],
-    GridItem(
-      crossAxisCellCount: 4,
-      child: OutboundMode(),
-    ),
-    GridItem(
-      crossAxisCellCount: 4,
-      child: NetworkDetection(),
-    ),
-    GridItem(
-      crossAxisCellCount: 4,
-      child: TrafficUsage(),
-    ),
-    GridItem(
-      crossAxisCellCount: 4,
-      child: IntranetIP(),
-    ),
-  ];
 
   _initScaffold(bool isCurrent) {
     if (!isCurrent) {
@@ -100,19 +68,29 @@ class _DashboardFragmentState extends State<DashboardFragment> {
           padding: const EdgeInsets.all(16).copyWith(
             bottom: 88,
           ),
-          child: Selector<AppState, double>(
-            selector: (_, appState) => appState.viewWidth,
-            builder: (_, viewWidth, ___) {
-              final columns = max(4 * ((viewWidth / 350).ceil()), 8);
+          child: Selector2<AppState, Config, DashboardState>(
+            selector: (_, appState, config) => DashboardState(
+              dashboardWidgets: config.appSetting.dashboardWidgets,
+              viewWidth: appState.viewWidth,
+            ),
+            builder: (_, state, ___) {
+              final columns = max(4 * ((state.viewWidth / 350).ceil()), 8);
               return SuperGrid(
                 key: key,
                 crossAxisCount: columns,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                children: items,
-                onSave: (_){
-
-                },
+                children: state.dashboardWidgets
+                    .where(
+                      (item) => item.platforms.contains(
+                        SupportPlatform.currentPlatform,
+                      ),
+                    )
+                    .map(
+                      (item) => item.widget,
+                    )
+                    .toList(),
+                onSave: (_) {},
               );
             },
           ),

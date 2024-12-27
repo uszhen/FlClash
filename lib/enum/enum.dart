@@ -1,11 +1,39 @@
 // ignore_for_file: constant_identifier_names
 
+import 'dart:io';
+
 import 'package:fl_clash/fragments/dashboard/widgets/widgets.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
+
+enum SupportPlatform {
+  Windows,
+  MacOS,
+  Linux,
+  Android;
+
+  static SupportPlatform get currentPlatform {
+    if (Platform.isWindows) {
+      return SupportPlatform.Windows;
+    } else if (Platform.isMacOS) {
+      return SupportPlatform.MacOS;
+    } else if (Platform.isLinux) {
+      return SupportPlatform.Linux;
+    } else if (Platform.isAndroid) {
+      return SupportPlatform.Android;
+    }
+    throw "invalid platform";
+  }
+}
+
+const desktopPlatforms = [
+  SupportPlatform.Linux,
+  SupportPlatform.MacOS,
+  SupportPlatform.Windows,
+];
 
 enum GroupType { Selector, URLTest, Fallback, LoadBalance, Relay }
 
@@ -266,12 +294,14 @@ enum DashboardWidget {
       crossAxisCellCount: 4,
       child: TUNButton(),
     ),
+    platforms: desktopPlatforms,
   ),
   systemProxyButton(
     GridItem(
       crossAxisCellCount: 4,
       child: SystemProxyButton(),
     ),
+    platforms: desktopPlatforms,
   ),
   intranetIp(
     GridItem(
@@ -280,7 +310,11 @@ enum DashboardWidget {
     ),
   );
 
-  final Widget widget;
+  final GridItem widget;
+  final List<SupportPlatform> platforms;
 
-  const DashboardWidget(this.widget);
+  const DashboardWidget(
+    this.widget, {
+    this.platforms = SupportPlatform.values,
+  });
 }

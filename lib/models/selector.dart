@@ -195,7 +195,6 @@ class ProxiesActionsState with _$ProxiesActionsState {
   }) = _ProxiesActionsState;
 }
 
-
 @freezed
 class ProxyState with _$ProxyState {
   const factory ProxyState({
@@ -236,6 +235,14 @@ class ClashConfigState with _$ClashConfigState {
     required List<String> rules,
     required String? globalRealUa,
   }) = _ClashConfigState;
+}
+
+@freezed
+class DashboardState with _$DashboardState {
+  const factory DashboardState({
+    required List<DashboardWidget> dashboardWidgets,
+    required double viewWidth,
+  }) = _DashboardState;
 }
 
 @freezed

@@ -127,7 +127,7 @@ class _NetworkSpeedState extends State<NetworkSpeed> {
                   ),
                 ),
                 SizedBox(
-                  height: 24,
+                  height: 32,
                 ),
                 Flexible(
                   flex: 0,

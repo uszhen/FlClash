@@ -8,16 +8,28 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'models.dart';
 
 part 'generated/config.freezed.dart';
+
 part 'generated/config.g.dart';
 
 final defaultAppSetting = const AppSetting().copyWith(
   isAnimateToPage: system.isDesktop ? false : true,
 );
 
+const List<DashboardWidget> defaultDashboardWidgets = [
+  DashboardWidget.networkSpeed,
+  DashboardWidget.systemProxyButton,
+  DashboardWidget.tunButton,
+  DashboardWidget.outboundMode,
+  DashboardWidget.networkDetection,
+  DashboardWidget.trafficUsage,
+  DashboardWidget.intranetIp,
+];
+
 @freezed
 class AppSetting with _$AppSetting {
   const factory AppSetting({
     String? locale,
+    @Default(defaultDashboardWidgets) List<DashboardWidget> dashboardWidgets,
     @Default(false) bool onlyProxy,
     @Default(false) bool autoLaunch,
     @Default(false) bool silentLaunch,
