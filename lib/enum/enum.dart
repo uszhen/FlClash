@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:fl_clash/fragments/dashboard/widgets/widgets.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
@@ -317,4 +316,12 @@ enum DashboardWidget {
     this.widget, {
     this.platforms = SupportPlatform.values,
   });
+
+  static DashboardWidget getDashboardWidget(GridItem gridItem) {
+    final dashboardWidgets = DashboardWidget.values;
+    final index = dashboardWidgets.indexWhere(
+      (item) => item.widget == gridItem,
+    );
+    return dashboardWidgets[index];
+  }
 }

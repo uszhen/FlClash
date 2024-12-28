@@ -4,6 +4,7 @@ import 'package:fl_clash/common/common.dart';
 import 'package:fl_clash/enum/enum.dart';
 import 'package:fl_clash/fragments/dashboard/widgets/status_button.dart';
 import 'package:fl_clash/models/models.dart';
+import 'package:fl_clash/state.dart';
 import 'package:fl_clash/widgets/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -90,7 +91,17 @@ class _DashboardFragmentState extends State<DashboardFragment> {
                       (item) => item.widget,
                     )
                     .toList(),
-                onSave: (_) {},
+                onSave: (girdItems) {
+                  final dashboardWidgets = girdItems
+                      .map(
+                        (item) => DashboardWidget.getDashboardWidget(item),
+                      )
+                      .toList();
+                  final config = globalState.appController.config;
+                  config.appSetting = config.appSetting.copyWith(
+                    dashboardWidgets: dashboardWidgets,
+                  );
+                },
               );
             },
           ),
